@@ -8,8 +8,6 @@ from typing import List, Optional
 from src.data_models.query import MercariItem
 from src.backends.mercari.base import BaseMercariSearchTool
 from src.backends.mercari.web_scraper import MercariWebSearchTool
-#from src.backends.mercari.playwright_scraper import PlaywrightSearchTool
-#from src.backends.mercari.mercarpi_scraper import MercarpiSearchTool
 from src.config import config
 
 logger = logging.getLogger(__name__)
@@ -28,14 +26,14 @@ class MercariSearchManager:
         if config.enable_mercari_fallback:
             if config.enable_mercari_fallback_mercarpi:
                 try:
-                    from src.backends.mercari.mercarpi_scraper import MercarpiSearchTool
-                    self.tiers.append(MercarpiSearchTool())
+                    from src.backends.mercari.mercarpi_scraper import MercariMercapiSearchTool
+                    self.tiers.append(MercariMercapiSearchTool())
                 except ModuleNotFoundError:
                     logger.info("Mercari Mercarpi Module not found")
             if config.enable_mercari_fallback_playwright:
                 try:
-                    from src.backends.mercari.playwright_scraper import PlaywrightSearchTool
-                    self.tiers.append(PlaywrightSearchTool())
+                    from src.backends.mercari.playwright_scraper import MercariPlaywrightSearchTool
+                    self.tiers.append(MercariPlaywrightSearchTool())
                 except ModuleNotFoundError:
                     logger.info("Mercari Playwright Module not found")
         else:

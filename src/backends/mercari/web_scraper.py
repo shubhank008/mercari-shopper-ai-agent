@@ -1,6 +1,6 @@
 """
-Priority Scraper: Direct HTTP/Web Scraper.
-Fetches search results via lightweight HTTP requests.
+Priority Scraper: Direct HTTP/API Scraper.
+Fetches search results via lightweight HTTP API requests.
 """
 
 import logging
@@ -63,6 +63,11 @@ class MercariWebSearchTool(BaseMercariSearchTool):
         limit: int = 10
     ) -> List[MercariItem]:
         logger.info(f"[Mercari WebScraper] Searching Mercari JP for keyword: '{keyword}'")
+
+        # !Debug: Disabled API Scraper to test fallbacks
+        raise RuntimeError(
+                        f"Mercari WebAPI Scraper is disabled to test fallback systems"
+                    )
 
         # Map condition string to API condition IDs
         cond_ids = []
@@ -178,56 +183,5 @@ class MercariWebSearchTool(BaseMercariSearchTool):
                     fetch_time = 0                  # Not calculating yet
                 )
             )
-
-        return items
-
-    def _parse_response_body(self, html_content: str, limit: int) -> List[MercariItem]:
-        """Parses HTML content for embedded JSON listing data or item elements."""
-        # Local import, only when needed
-        from bs4 import BeautifulSoup
-        import json
-        import re
-
-        items = []
-        soup = BeautifulSoup(html_content, "html.parser")
-
-        # !Debug: Save html content to a file for debug
-        with open("./debug.html", "w", encoding="utf-8") as file:
-            #file.write(str(soup))
-            file.write(soup.prettify())
-
-        # Attempt to find Mercari's embedded state script tag
-        script_tag = soup.find("script", id="__NEXT_DATA__")
-        if script_tag and script_tag.string:
-            try:
-                data = json.loads(script_tag.string)
-                # Walk through Next.js state tree for search items
-                search_results = (
-                    data.get("props", {})
-                    .get("pageProps", {})
-                    .get("initialState", {})
-                    .get("search", {})
-                    .get("items", [])
-                )
-
-                for raw_item in search_results[:limit]:
-                    item_id = raw_item.get("id", "")
-                    if not item_id:
-                        continue
-                    
-                    items.append(
-                        MercariItem(
-                            item_id=item_id,
-                            title=raw_item.get("name", "Mercari Listing"),
-                            price=int(raw_item.get("price", 0)),
-                            condition=raw_item.get("conditionName", "Used"),
-                            item_url=f"https://jp.mercari.com/item/{item_id}",
-                            image_url=raw_item.get("thumbnails", [""])[0] if raw_item.get("thumbnails") else None,
-                            description=raw_item.get("description", ""),
-                            source_tier="Tier 1: Direct API"
-                        )
-                    )
-            except Exception as e:
-                logger.debug(f"Failed to parse __NEXT_DATA__ script: {e}")
 
         return items

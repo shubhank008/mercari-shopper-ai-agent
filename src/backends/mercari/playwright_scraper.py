@@ -1,5 +1,5 @@
 """
-Fallback Scraper: Playwright Headless Browser Scraper.
+Tier 3 Fallback Scraper: Playwright Headless Browser Scraper.
 Waits for Next.js App Router client-side hydration to render product grid cells.
 """
 
@@ -14,7 +14,7 @@ from src.config import config
 logger = logging.getLogger(__name__)
 
 
-class PlaywrightSearchTool(BaseMercariSearchTool):
+class MercariPlaywrightSearchTool(BaseMercariSearchTool):
     """Fallback Scraper using Playwright headless Chromium browser."""
 
     async def search(
@@ -25,7 +25,7 @@ class PlaywrightSearchTool(BaseMercariSearchTool):
         condition: Optional[str] = None,
         limit: int = 10
     ) -> List[MercariItem]:
-        logger.info(f"[Tier 2: Playwright] Launching Chromium for keyword: '{keyword}'")
+        logger.info(f"[Tier 3: Playwright] Launching Chromium for keyword: '{keyword}'")
 
         search_url = f"https://jp.mercari.com/search?keyword={keyword}"
         if min_price is not None:
