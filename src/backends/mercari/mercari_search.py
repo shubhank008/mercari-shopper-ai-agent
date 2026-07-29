@@ -81,6 +81,9 @@ class MercariSearchManager:
                     f"Tier {idx} ({tool_name}) failed: {e}. "
                     f"Proceeding to next fallback tier..."
                 )
+                # !Debug: Strictly for debugging full stack trace, DISABLE when not debugging
+                #import traceback
+                #traceback.print_exc()
 
         # If all registered tiers fail
         raise RuntimeError(f"All Mercari Search systems failed. Last error: {last_exception}")

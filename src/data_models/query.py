@@ -37,10 +37,14 @@ class MercariItem(BaseModel):
 
     item_id: str = Field(..., description="Unique Mercari item identifier.")
     title: str = Field(..., description="Item listing title.")
-    price: int = Field(..., ge=0, description="Listing price in JPY (¥).")
+    price: float = Field(..., ge=0, description="Raw Listing price (irrespective of currency).")
     item_url: str = Field(..., description="Direct URL to item listing page on Mercari JP.")
     # Optional
+    price_jpy: Optional[float] = Field(default=None, description="Listing price in JPY (¥) if available.")
+    price_usd: Optional[float] = Field(default=None, description="Listing price in USD ($) if available.")
     condition: str = Field(default="Unknown", description="Item condition description.")
+    # We store currency incase Mercari Scraper returns prices in USD instead of JPY
+    currency: Optional[str] = Field(default="USD", description="Listing currency (jpy, usd, etc.)")
     image_url: Optional[str] = Field(default=None, description="Primary product thumbnail image URL.")
     description: Optional[str] = Field(default="", description="Product description.")
     seller_rating: Optional[str] = Field(default="N/A", description="Seller rating or badge if available.")

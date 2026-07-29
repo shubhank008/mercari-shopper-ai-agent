@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 class MercariWebSearchTool(BaseMercariSearchTool):
     """Attempt scraping using direct HTTP search queries."""
 
-    MERCARI_SEARCH_URL = "https://jp.mercari.com/search"
+    MERCARI_API_ENDPOINT = "https://api.mercari.jp/v2/entities:search"
 
     def __init__(self):
         # Fake browser headers and user-agent
@@ -28,6 +28,10 @@ class MercariWebSearchTool(BaseMercariSearchTool):
             ),
             "Accept-Language": "ja-JP,ja;q=0.9,en-US;q=0.8,en;q=0.7",
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Content-Type": "application/json",
+            "X-Platform": "web",
+            "Origin": "https://jp.mercari.com",
+            "Referer": "https://jp.mercari.com/",
         }
 
     async def search(
@@ -40,34 +44,82 @@ class MercariWebSearchTool(BaseMercariSearchTool):
     ) -> List[MercariItem]:
         logger.info(f"[Mercari WebScraper] Searching Mercari JP for keyword: '{keyword}'")
 
-        params = {"keyword": keyword}
-        if min_price is not None:
-            params["price_min"] = str(min_price)
-        if max_price is not None:
-            params["price_max"] = str(max_price)
+        # Map condition string to API condition IDs
+        cond_ids = []
         if condition and condition in self.CONDITION_MAP:
-            cond_id = self.CONDITION_MAP[condition]
-            if cond_id:
-                params["item_condition_id"] = cond_id
+            cid = self.CONDITION_MAP[condition]
+            if cid and cid.isdigit():
+                cond_ids.append(int(cid))
+
+        # Payload structure required by https://api.mercari.jp/v2/entities:search
+        payload = {
+            "userId": "",
+            "pageSize": limit,
+            "pageToken": "",
+            "searchSessionId": "",
+            "indexRouting": "INDEX_ROUTING_UNSPECIFIED",
+            "thumbnailTypes": [],
+            "searchCondition": {
+                "keyword": keyword,
+                "excludeKeyword": "",
+                "sort": "SORT_SCORE",
+                "order": "ORDER_DESC",
+                "status": ["STATUS_ON_SALE"],
+                "sizeId": [],
+                "categoryId": [],
+                "brandId": [],
+                "sellerId": [],
+                "priceMin": min_price or 0,
+                "priceMax": max_price or 0,
+                "itemConditionId": cond_ids,
+                "shippingPayerId": []
+            },
+            "defaultSearchCondition": {},
+            "serviceFrom": "suruga"
+        }
 
         async with httpx.AsyncClient(
             headers=self.headers,
             follow_redirects=True,
             timeout=config.request_timeout_seconds
         ) as client:
-            response = await client.get(self.MERCARI_SEARCH_URL, params=params)
+            response = await client.post(self.MERCARI_API_ENDPOINT, json=payload)
+
+            # !Debug: Save API result to a file for debug
+            with open("./web_debug.log", "w", encoding="utf-8") as file:
+                #file.write(str(soup))
+                file.write(response.text)
             
             if response.status_code != 200:
                 raise RuntimeError(
                     f"Mercari API endpoint returned status HTTP {response.status_code}"
                 )
 
-            # Parse HTML DOM / embedded JSON script tags
-            # If response HTML lacks rendered items (due to client-side JS requirement), trigger fallback
-            items = self._parse_response_body(response.text, limit=limit)
-            
-            if not items:
-                raise ValueError("Mercari WebScraper returned 0 items (JS rendering likely required).")
+            data = response.json()
+            raw_items = data.get("items", [])
+
+            if not raw_items:
+                raise ValueError(f"Mercari API returned 0 results for keyword '{keyword}'.")
+
+            items: List[MercariItem] = []
+            for item in raw_items[:limit]:
+                item_id = item.get("id", "")
+                if not item_id:
+                    continue
+
+                items.append(
+                    MercariItem(
+                        item_id=item_id,
+                        title=item.get("name", "Mercari Item"),
+                        price=int(item.get("price", 0)),
+                        condition=item.get("itemConditionId", "Used"),
+                        item_url=f"https://jp.mercari.com/item/{item_id}",
+                        image_url=item.get("thumbnails", [""])[0] if item.get("thumbnails") else None,
+                        description=f"Mercari listing for {item.get('name')}.",
+                        source_tier="DirectAPI WebScraper",
+                        fetch_time = 0                  # Not calculating yet
+                    )
+                )
 
             return items
 

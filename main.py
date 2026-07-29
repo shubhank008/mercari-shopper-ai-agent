@@ -19,6 +19,7 @@ async def test_search():
     manager = MercariSearchManager()
     results = await manager.search(keyword="Seiko 5", max_price=25000, limit=3)
     for item in results:
-        print(f"[{item.source_tier}] {item.title} - ¥{item.price:,} ({item.item_url})")
+        print(f"[{item.source_tier}] {item.title} - {item.currency} {item.price:,} ({item.item_url})")
+    print(results[0])
 
 asyncio.run(test_search())
