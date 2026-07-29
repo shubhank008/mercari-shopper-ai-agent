@@ -1,0 +1,2 @@
+// Empty, for future upgrades, ideas and improvements
+// Probably add Test Suites for LLM providers and Mercari backend to test api call metadata, uptime, valid response and create ticket if backend breaks (mercari parser)
