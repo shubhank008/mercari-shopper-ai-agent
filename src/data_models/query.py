@@ -49,7 +49,7 @@ class MercariItem(BaseModel):
     description: Optional[str] = Field(default="", description="Product description.")
     seller_rating: Optional[str] = Field(default="N/A", description="Seller rating or badge if available.")
     # !TODO: Might need to change listing_date from str to timestamp if want to convert it to natural language (7 days ago)
-    listing_date: Optional[str] = Field(default="N/A", description="Seller rating or badge if available.")
+    listing_date: Optional[float] = Field(default=None, description="Listing date as unix timestamp")
     source_tier: str = Field(default="primary", description="Scraper tier that retrieved this item.")
     fetch_time: float = Field(default=0, description="Execution time for this scrape call")
 

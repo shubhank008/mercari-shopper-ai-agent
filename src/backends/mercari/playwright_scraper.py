@@ -120,7 +120,7 @@ class PlaywrightSearchTool(BaseMercariSearchTool):
                                 currency=currency_text,
                                 condition="any",
                                 item_url=f"https://jp.mercari.com{href}" if href.startswith("/") else href,
-                                description="",
+                                description=None,
                                 source_tier="Mercari PlaywrightScraper Browser",
                                 image_url=image_url
                             )
