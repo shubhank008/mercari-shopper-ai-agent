@@ -8,7 +8,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class AppConfig(BaseSettings):
-    """Application Settings mapped from .env file."""
+    """Application Settings mapped from .env file. Make sure var names here match the ones in .env for auto-mapping."""
 
     model_config = SettingsConfigDict(
         env_file=".env",

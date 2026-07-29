@@ -27,6 +27,7 @@ Safety mecanisms against Prompt Injection, garbage output and content trimming -
 - Token, API calls, Backend usage metadata and monitoring to get a overview of how our system is working in terms of speed, usage and cost
 - Summary sub-module for large product descriptions instead of truncating it
 - Additional Search Backends like Yahoo Auctions, Yahoo PayPay, Sofmap (Used)
+- Current-code improvements marked with `!TODO` inline comment (easy-search)
 
 # External Libraries (and their use)
 
