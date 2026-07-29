@@ -4,6 +4,7 @@ Waits for Next.js App Router client-side hydration to render product grid cells.
 """
 
 import logging
+import time
 import re
 from typing import List, Optional, Tuple
 from playwright.async_api import async_playwright
@@ -25,6 +26,9 @@ class MercariPlaywrightSearchTool(BaseMercariSearchTool):
         condition: Optional[str] = None,
         limit: int = 10
     ) -> List[MercariItem]:
+        # !Debug: For calculating execution time for performance benchmarks
+        start_time = time.perf_counter()
+
         logger.info(f"[Tier 3: Playwright] Launching Chromium for keyword: '{keyword}'")
 
         search_url = f"https://jp.mercari.com/search?keyword={keyword}"
@@ -75,6 +79,9 @@ class MercariPlaywrightSearchTool(BaseMercariSearchTool):
                 # Extract listing links
                 elements = await page.query_selector_all("a[data-testid='thumbnail-link']")
 
+                # In milliseconds 
+                end_time = round((time.perf_counter() - start_time) * 1000, 2)
+
                 # !Debug: Save Playright DOM result to a file for debug
                 # We can use the saved raw html of item in DOM Viewer to easily analyze the DOM structure if Mercari Updates/Breaks it 
                 if len(elements) > 0:
@@ -122,7 +129,8 @@ class MercariPlaywrightSearchTool(BaseMercariSearchTool):
                                 item_url=f"https://jp.mercari.com{href}" if href.startswith("/") else href,
                                 description=None,
                                 source_tier="Mercari PlaywrightScraper Browser",
-                                image_url=image_url
+                                image_url=image_url,
+                                fetch_time=end_time
                             )
                         )
                     except Exception as item_err:

@@ -4,6 +4,7 @@ Handles dynamic DPoP token generation and request signing required by Mercari.
 """
 
 import logging
+import time
 from typing import List, Optional
 from mercapi import Mercapi
 from src.data_models.query import MercariItem
@@ -26,6 +27,9 @@ class MercariMercapiSearchTool(BaseMercariSearchTool):
         condition: Optional[str] = None,
         limit: int = 10
     ) -> List[MercariItem]:
+        # !Debug: For calculating execution time for performance benchmarks
+        start_time = time.perf_counter()
+
         logger.info(f"[Mercari MercapiScraper] Querying Mercari JP for keyword: '{keyword}'")
 
         # Map condition string to API condition IDs
@@ -46,6 +50,9 @@ class MercariMercapiSearchTool(BaseMercariSearchTool):
             
             if not results or not results.items:
                 raise ValueError(f"Mercari MercapiScraper returned 0 results for keyword '{keyword}'.")
+
+            # In milliseconds 
+            end_time = round((time.perf_counter() - start_time) * 1000, 2)
 
             items: List[MercariItem] = []
             
@@ -80,7 +87,7 @@ class MercariMercapiSearchTool(BaseMercariSearchTool):
                         description=None,
                         listing_date=float(item.updated.timestamp() if item.updated else 0),               # Using updated instead of created timestamp
                         source_tier="Mercari MercapiScraper",
-                        fetch_time = 0                  # Not calculating yet
+                        fetch_time = end_time                  # Not calculating yet
                     )
                 )
 

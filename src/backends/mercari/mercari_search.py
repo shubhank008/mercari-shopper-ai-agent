@@ -26,12 +26,14 @@ class MercariSearchManager:
         if config.enable_mercari_fallback:
             if config.enable_mercari_fallback_mercarpi:
                 try:
+                    import mercapi
                     from src.backends.mercari.mercarpi_scraper import MercariMercapiSearchTool
                     self.tiers.append(MercariMercapiSearchTool())
                 except ModuleNotFoundError:
                     logger.info("Mercari Mercarpi Module not found")
             if config.enable_mercari_fallback_playwright:
                 try:
+                    import playwright
                     from src.backends.mercari.playwright_scraper import MercariPlaywrightSearchTool
                     self.tiers.append(MercariPlaywrightSearchTool())
                 except ModuleNotFoundError:

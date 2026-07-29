@@ -7,6 +7,7 @@ import logging
 import httpx
 import random
 import uuid
+import time
 from httpx import Request
 from ecdsa import SigningKey, NIST256p
 from typing import List, Optional
@@ -62,12 +63,13 @@ class MercariWebSearchTool(BaseMercariSearchTool):
         condition: Optional[str] = None,
         limit: int = 10
     ) -> List[MercariItem]:
+        # !Debug: For calculating execution time for performance benchmarks
+        start_time = time.perf_counter()
+
         logger.info(f"[Mercari WebScraper] Searching Mercari JP for keyword: '{keyword}'")
 
         # !Debug: Disabled API Scraper to test fallbacks
-        raise RuntimeError(
-                        f"Mercari WebAPI Scraper is disabled to test fallback systems"
-                    )
+        raise RuntimeError(f"Mercari WebAPI Scraper is disabled to test fallback systems")
 
         # Map condition string to API condition IDs
         cond_ids = []
@@ -147,6 +149,9 @@ class MercariWebSearchTool(BaseMercariSearchTool):
         if not raw_items:
             raise ValueError(f"Mercari API returned 0 results for keyword '{keyword}'.")
 
+        # In milliseconds 
+        end_time = round((time.perf_counter() - start_time) * 1000, 2)
+
         items: List[MercariItem] = []
         for item in raw_items[:limit]:
             item_id = item.get("id", "")
@@ -180,7 +185,7 @@ class MercariWebSearchTool(BaseMercariSearchTool):
                     description=None,
                     listing_date=float(item.get("updated", 0)),               # Using updated instead of created timestamp
                     source_tier="DirectAPI WebScraper",
-                    fetch_time = 0                  # Not calculating yet
+                    fetch_time = end_time                  # Not calculating yet
                 )
             )
 

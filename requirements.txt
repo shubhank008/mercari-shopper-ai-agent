@@ -20,12 +20,12 @@ ecdsa>=0.19.0
 # https://github.com/mpdavis/python-jose
 python-jose[cryptography]>=3.3
 
+# UI & Utilities
+rich>=13.7.1                        # Rich text formatting
+tenacity>=8.3.0                     # For Retries
+
 # (Optional) For fallback, disable in .env too if not required
 playwright>=1.43.0
 
 # (Optional) For fallback, disable in .env too if not required
 mercapi>=0.4.2
-
-# UI & Utilities
-rich>=13.7.1                        # Rich text formatting
-tenacity>=8.3.0                     # For Retries
