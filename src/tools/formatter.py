@@ -30,18 +30,20 @@ def print_search_results_table(items: List[MercariItem], tier_used: str):
 
     table.add_column("#", justify="right", style="cyan", no_wrap=True)
     table.add_column("Title", style="white")
+    table.add_column("Condition", justify="right", style="gold")
     table.add_column("Price (JPY)", justify="right", style="green")
     table.add_column("Price (USD)", justify="right", style="dim green")
     table.add_column("Latency", justify="right", style="yellow")
 
     for idx, item in enumerate(items, start=1):
-        usd_str = f"${item.usd_price:.2f}" if item.usd_price else "N/A"
+        usd_str = f"${item.price_usd:.2f}" if item.price_usd else "N/A"
         table.add_row(
             str(idx),
             item.title[:45] + ("..." if len(item.title) > 45 else ""),
+            (item.condition or "Unknown"),
             f"¥{item.price:,}",
             usd_str,
-            f"{item.fetch_time_ms}ms"
+            f"{item.fetch_time}ms"
         )
 
     console.print(table)
