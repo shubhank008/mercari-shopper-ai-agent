@@ -49,6 +49,7 @@ The Agent/LLM is fed these detailed results to present its reasoning and selecti
 - Additional Search Backends like Yahoo Auctions, Yahoo PayPay, Sofmap (Used)
 - Current-code improvements marked with `!TODO` inline comment (easy-search)
 - Add Language Translation (JP->Eng) and currency selector (show price in USD or JPY)
+- For Production, final or all Exceptions should be handled into Consumer facing Graceful messages, while internally alerting / logging DevOps
 
 # External Libraries (and their use)
 

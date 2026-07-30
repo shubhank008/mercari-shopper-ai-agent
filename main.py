@@ -2,6 +2,7 @@
 from src.config import config
 from src.data_models.query import UserQuery, MercariItem
 from src.guardrails.safety import PromptGuardrail
+from src.llm_providers.llm_manager import LLMFallbackManager
 
 # Test config loads
 print(f"Primary LLM: {config.primary_llm_model}")
@@ -18,9 +19,33 @@ from src.backends.mercari.mercari_search import MercariSearchManager
 
 async def test_search():
     manager = MercariSearchManager()
-    results = await manager.search(keyword="Seiko 5", max_price=25000, limit=10)
+    results = await manager.search(keyword="Seiko 5 watch", min_price=6000, max_price=25000, limit=config.max_items_per_search)
     for item in results:
-        print(f"[{item.source_tier}] {item.title} - {item.currency} {item.price:,} ({item.item_url})")
+        print(f"[{item.source_tier}] {item.condition} - {item.title} - {item.currency} {item.price:,} ({item.item_url})")
     print(results[0])
 
-asyncio.run(test_search())
+async def test_llm():
+    manager = LLMFallbackManager()
+    
+    # Define search tool definition
+    tools = [{
+        "name": "search_mercari",
+        "description": "Searches Mercari Japan for items.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "keyword": {"type": "string"}
+            },
+            "required": ["keyword"]
+        }
+    }]
+    
+    messages = [{"role": "user", "content": "Find a vintage Seiko 5 watch under 20000 yen"}]
+    system_prompt = "You are an AI Mercari Shopping Assistant."
+
+    text, tool_calls, raw, provider = await manager.generate_tool_call(messages, tools, system_prompt)
+    print(f"\n[LLM Test] Provider Used: {provider}")
+    print(f"[LLM Test] Tool Calls Generated: {tool_calls}")
+
+#asyncio.run(test_search())
+asyncio.run(test_llm())

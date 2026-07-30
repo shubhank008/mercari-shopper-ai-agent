@@ -69,7 +69,7 @@ class MercariWebSearchTool(BaseMercariSearchTool):
         logger.info(f"[Mercari WebScraper] Searching Mercari JP for keyword: '{keyword}'")
 
         # !Debug: Disabled API Scraper to test fallbacks
-        raise RuntimeError(f"Mercari WebAPI Scraper is disabled to test fallback systems")
+        #raise RuntimeError(f"Mercari WebAPI Scraper is disabled to test fallback systems")
 
         # Map condition string to API condition IDs
         cond_ids = []

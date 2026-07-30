@@ -35,8 +35,8 @@ class AppConfig(BaseSettings):
 
     # Default LLM Models
     # !TODO: Add these options in .env and declare them as provider-specific models instead of Primary or Fallback, this should be handled by the provider interface
-    primary_llm_model: str = "claude-3-5-sonnet-20240620"
-    fallback_llm_model: str = "gpt-4o"
+    anthropic_model_id: str = "claude-3-5-sonnet-20240620"
+    openai_model_id: str = "gpt-4o"
 
 
 # Global configuration instance
