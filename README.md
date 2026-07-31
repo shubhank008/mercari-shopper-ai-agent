@@ -24,7 +24,7 @@ Interprets natural language shopping requests, extracts search keyword and const
 
 ## Prerequisites
 - Python 3.10 or higher
-- Node.js 
+- python-pip
 - (Optional) Playwright browser binaries (For Tier 3 browser fallback)
 
 ## Installation
