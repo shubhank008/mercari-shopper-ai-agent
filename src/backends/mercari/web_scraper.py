@@ -193,6 +193,7 @@ class MercariWebSearchTool(BaseMercariSearchTool):
 
     #################################
     ## Get detailed product data
+    #################################
     async def get_item_details(self, item_id: str) -> Dict[str, Any]:
         """Fetches detailed item info using Mercari API getItem endpoint."""
         logger.info(f"[Mercari WebScraper] Fetching details for item_id: '{item_id}'")
@@ -235,9 +236,5 @@ class MercariWebSearchTool(BaseMercariSearchTool):
                 "item_url": f"https://jp.mercari.com/item/{item_id}"
             }
 
-        # Fallback dictionary if detail endpoint returns non-200
-        return {
-            "id": item_id,
-            "description": f"",
-            "item_url": f"https://jp.mercari.com/item/{item_id}"
-        }
+        # Return empty dictionary as we will patch valid results with existing MercariItem
+        return {}

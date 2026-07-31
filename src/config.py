@@ -31,7 +31,8 @@ class AppConfig(BaseSettings):
     max_tool_call_loops: int = 5
     scraper_timeout_seconds: float = 10.0
     llm_timeout_seconds: float = 60.0
-    max_items_per_search: int = 10
+    max_items_per_search: int = 25
+    max_items_for_enrichment: int = 10
     max_description_length: int = 1500
 
     # Default LLM Models

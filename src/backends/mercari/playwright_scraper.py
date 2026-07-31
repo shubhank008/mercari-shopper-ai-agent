@@ -229,9 +229,5 @@ class MercariPlaywrightSearchTool(BaseMercariSearchTool):
         """(CURRENTLY NOT IMPLEMENTED) Fetches detailed item info using Playwright DOM Extraction"""
         logger.info(f"[Mercari PlaywrightScraper] Fetching details for item_id: '{item_id}'")
 
-        # Fallback Dict
-        return {
-                    "id": item_id,
-                    "description": f"",
-                    "item_url": f"https://jp.mercari.com/item/{item_id}"
-                }
+        # Return empty dictionary as we will patch valid results with existing MercariItem
+        return {}

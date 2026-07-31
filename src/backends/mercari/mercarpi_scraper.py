@@ -115,12 +115,8 @@ class MercariMercapiSearchTool(BaseMercariSearchTool):
             )
             
             if not item_data or item_data.id_:
-                # Fallback Dict
-                return {
-                            "id": item_id,
-                            "description": f"",
-                            "item_url": f"https://jp.mercari.com/item/{item_id}"
-                        }
+                # Return empty dictionary as we will patch valid results with existing MercariItem
+                return {}
 
             return {
                         "id": item_id,

@@ -104,8 +104,4 @@ class MercariSearchManager:
                 logger.warning(f"Tier {idx} get_item_details failed for {item_id}: {e}")
                 continue
 
-        return {
-            "item_id": item_id,
-            "full_description": "",
-            "item_url": f"https://jp.mercari.com/item/{item_id}"
-        }
+        return {}

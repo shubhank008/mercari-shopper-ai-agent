@@ -30,7 +30,7 @@ def print_search_results_table(items: List[MercariItem], tier_used: str):
 
     table.add_column("#", justify="right", style="cyan", no_wrap=True)
     table.add_column("Title", style="white")
-    table.add_column("Condition", justify="right", style="gold")
+    table.add_column("Condition", justify="right", style="red")
     table.add_column("Price (JPY)", justify="right", style="green")
     table.add_column("Price (USD)", justify="right", style="dim green")
     table.add_column("Latency", justify="right", style="yellow")
@@ -51,6 +51,6 @@ def print_search_results_table(items: List[MercariItem], tier_used: str):
 
 def print_llm_response(response_text: str, provider_used: str):
     """Render the final LLM recommendation as Markdown."""
-    console.print(f"\n[bold green]Recommendations generated via [{provider_used}]:[/bold green]\n")
+    #console.print(f"\n[bold green]Recommendations generated via [{provider_used}]:[/bold green]\n")
     md = Markdown(response_text)
     console.print(Panel(md, border_style="green", expand=False))
