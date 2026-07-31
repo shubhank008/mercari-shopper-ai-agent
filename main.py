@@ -33,7 +33,7 @@ async def run_single_query(harness: AgentHarness, query: str):
     logger.info(f"Processing query: '{query}'")
 
     with console.status("[bold cyan]Searching Mercari Japan. Please wait...[/bold cyan]", spinner="dots"):
-        final_text, items, provider, tier = await harness.run(query)
+        final_text, items, provider, tier, metrics = await harness.run(query)
 
     # Only print the fetched items table if log level is set to Info (which also prints additional harness logs)
     if items and config.log_level != "WARNING":
