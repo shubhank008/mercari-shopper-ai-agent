@@ -58,7 +58,7 @@ class OpenAIProvider(BaseLLMProvider):
             tools=openai_tools,
             tool_choice="auto",
             max_tokens=2048,
-            timeout=config.request_timeout_seconds
+            timeout=config.llm_timeout_seconds
         )
 
         choice = response.choices[0].message
@@ -89,7 +89,7 @@ class OpenAIProvider(BaseLLMProvider):
             model=self.model,
             messages=formatted_messages,
             max_tokens=2048,
-            timeout=config.request_timeout_seconds
+            timeout=config.llm_timeout_seconds
         )
 
         return response.choices[0].message.content or ""

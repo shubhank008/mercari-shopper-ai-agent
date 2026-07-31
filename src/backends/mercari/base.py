@@ -4,7 +4,7 @@ Defines abstract base class and condition code mappers for Mercari searching.
 """
 
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from src.data_models.query import MercariItem
 
 class BaseMercariSearchTool(ABC):
@@ -34,4 +34,9 @@ class BaseMercariSearchTool(ABC):
         Executes search on Mercari Japan.
         Returns a list of standardized MercariItem instances.
         """
+        pass
+
+    @abstractmethod
+    async def get_item_details(self, item_id: str) -> Dict[str, Any]:
+        """Fetches detailed product listing info (full description, seller ratings, etc.)."""
         pass

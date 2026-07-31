@@ -47,9 +47,15 @@ class MercariItem(BaseModel):
     currency: Optional[str] = Field(default="USD", description="Listing currency (jpy, usd, etc.)")
     image_url: Optional[str] = Field(default=None, description="Primary product thumbnail image URL.")
     description: Optional[str] = Field(default="", description="Product description.")
-    seller_rating: Optional[str] = Field(default="N/A", description="Seller rating or badge if available.")
+    category: Optional[str] = Field(default="", description="Product category title, if available.")
+    # Seller data
+    seller_rating_score: Optional[float] = Field(default=None, description="Seller rating score out of 5, if available.")
+    seller_total_ratings: Optional[int] = Field(default=None, description="Seller total number of ratings, if available.")
+    seller_quick_shipper: Optional[bool] = Field(default=False, description="Is Seller a quick shipper ?")
+    seller_name: Optional[str] = Field(default=None, description="Seller name, if available.")
     # !TODO: Might need to change listing_date from str to timestamp if want to convert it to natural language (7 days ago)
     listing_date: Optional[float] = Field(default=None, description="Listing date as unix timestamp")
+    num_likes: Optional[int] = Field(default=0, description="Number of likes for this product by other users")
     source_tier: str = Field(default="primary", description="Scraper tier that retrieved this item.")
     fetch_time: float = Field(default=0, description="Execution time for this scrape call")
 

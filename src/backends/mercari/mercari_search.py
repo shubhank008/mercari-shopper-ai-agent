@@ -4,7 +4,7 @@ Orchestrates multi-tier execution (WebScraper -> Mercarpi -> Playwright).
 """
 
 import logging
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from src.data_models.query import MercariItem
 from src.backends.mercari.base import BaseMercariSearchTool
 from src.backends.mercari.web_scraper import MercariWebSearchTool
@@ -87,3 +87,25 @@ class MercariSearchManager:
 
         # If all registered tiers fail
         raise RuntimeError(f"All Mercari Search systems failed. Last error: {last_exception}")
+
+
+    async def get_item_details(self, item_id: str) -> Dict[str, Any]:
+        """
+        Executes get_item_details across registered scraper tiers.
+        Returns Dict[str, Any] with detailed product data.
+        """
+        for idx, tool in enumerate(self.tiers, start=1):
+            try:
+                if hasattr(tool, "get_item_details"):
+                    details = await tool.get_item_details(item_id)
+                    if details:
+                        return details
+            except Exception as e:
+                logger.warning(f"Tier {idx} get_item_details failed for {item_id}: {e}")
+                continue
+
+        return {
+            "item_id": item_id,
+            "full_description": "",
+            "item_url": f"https://jp.mercari.com/item/{item_id}"
+        }

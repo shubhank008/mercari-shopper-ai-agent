@@ -39,7 +39,7 @@ class ClaudeProvider(BaseLLMProvider):
             system=system_prompt,
             messages=messages,
             tools=tools,
-            timeout=config.request_timeout_seconds
+            timeout=config.llm_timeout_seconds
         )
 
         text_content = ""
@@ -69,7 +69,7 @@ class ClaudeProvider(BaseLLMProvider):
             max_tokens=2048,
             system=system_prompt,
             messages=messages,
-            timeout=config.request_timeout_seconds
+            timeout=config.llm_timeout_seconds
         )
 
         text_content = ""

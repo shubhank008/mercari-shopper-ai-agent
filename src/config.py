@@ -29,7 +29,8 @@ class AppConfig(BaseSettings):
 
     # Operational Parameters
     max_tool_call_loops: int = 5
-    request_timeout_seconds: float = 15.0
+    scraper_timeout_seconds: float = 10.0
+    llm_timeout_seconds: float = 60.0
     max_items_per_search: int = 10
     max_description_length: int = 1500
 

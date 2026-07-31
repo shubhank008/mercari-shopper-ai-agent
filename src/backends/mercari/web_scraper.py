@@ -10,7 +10,7 @@ import uuid
 import time
 from httpx import Request
 from ecdsa import SigningKey, NIST256p
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from src.data_models.query import MercariItem
 from src.backends.mercari.base import BaseMercariSearchTool
 from src.config import config
@@ -190,3 +190,54 @@ class MercariWebSearchTool(BaseMercariSearchTool):
             )
 
         return items
+
+    #################################
+    ## Get detailed product data
+    async def get_item_details(self, item_id: str) -> Dict[str, Any]:
+        """Fetches detailed item info using Mercari API getItem endpoint."""
+        logger.info(f"[Mercari WebScraper] Fetching details for item_id: '{item_id}'")
+
+        # Detailed Parameter URL looks like this
+        # https://api.mercari.jp/items/get?id=m98368113851&include_item_attributes=true&include_product_page_component=true&include_non_ui_item_attributes=true&include_donation=true&include_item_attributes_sections=true&include_auction=true&country_code=US
+        url = f"https://api.mercari.jp/items/get"
+
+        # Create Request object
+        req = Request(
+            "GET",
+            url,
+            params={"id": item_id},
+            headers=self.headers
+        )
+        signed_req = self._sign_request(req)
+        response = await self._client.send(signed_req)
+
+        # !Debug: Save get_item API result to a file for debug
+        with open("./web_debug.log", "w", encoding="utf-8") as file:
+            #file.write(str(soup))
+            file.write(response.text)
+
+        if response.status_code == 200:
+            data = response.json().get("data", {})
+            return {
+                "id": item_id,
+                "title": data.get("name", ""),
+                "price": int(data.get("price", 0)),
+                "description": data.get("description", ""),
+                "seller_name": data.get("seller", {}).get("name", None),
+                "seller_rating_score": data.get("seller", {}).get("star_rating_score", None),
+                "seller_total_ratings": data.get("seller", {}).get("num_ratings", None),
+                "seller_quick_shipper": data.get("seller", {}).get("quick_shipper", False),
+                "price_usd": data.get("converted_price", {}).get("price", None),
+                "category": data.get("item_category", {}).get("name", ""),
+                "condition": data.get("item_condition", {}).get("name", "Unknown") + " - " + data.get("item_condition", {}).get("subname", ""),
+                "listing_date": data.get("updated", None),
+                "num_likes": data.get("num_likes", 0),
+                "item_url": f"https://jp.mercari.com/item/{item_id}"
+            }
+
+        # Fallback dictionary if detail endpoint returns non-200
+        return {
+            "id": item_id,
+            "description": f"",
+            "item_url": f"https://jp.mercari.com/item/{item_id}"
+        }

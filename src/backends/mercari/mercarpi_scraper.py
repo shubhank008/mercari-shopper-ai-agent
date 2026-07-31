@@ -5,7 +5,7 @@ Handles dynamic DPoP token generation and request signing required by Mercari.
 
 import logging
 import time
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from mercapi import Mercapi
 from src.data_models.query import MercariItem
 from src.backends.mercari.base import BaseMercariSearchTool
@@ -101,3 +101,44 @@ class MercariMercapiSearchTool(BaseMercariSearchTool):
         except Exception as e:
             logger.warning(f"[Tier 2: MercapiScraper] Search failed: {e}")
             raise RuntimeError(f"MercapiScraper execution error: {e}")
+
+    #################################
+    ## Get detailed product data
+    async def get_item_details(self, item_id: str) -> Dict[str, Any]:
+        """Fetches detailed item info using Mercapi .item() method"""
+        logger.info(f"[Mercari MercapiScraper] Fetching details for item_id: '{item_id}'")
+
+        try:
+            # Mercapi handles DPoP cryptographic token generation automatically
+            item_data = await self.client.item(
+                id_=item_id
+            )
+            
+            if not item_data or item_data.id_:
+                # Fallback Dict
+                return {
+                            "id": item_id,
+                            "description": f"",
+                            "item_url": f"https://jp.mercari.com/item/{item_id}"
+                        }
+
+            return {
+                        "id": item_id,
+                        "title": item_data.name or "",
+                        "price": item_data.price or 0,
+                        "description": item_data.description or "",
+                        "seller_name": item_data.seller.name if item_data.seller else None,
+                        "seller_rating_score": item_data.seller.star_rating_score if item_data.seller else None,
+                        "seller_total_ratings": item_data.seller.num_ratings if item_data.seller else None,
+                        "seller_quick_shipper": item_data.seller.quick_shipper if item_data.seller else False,
+                        "price_usd": None,
+                        "category": item_data.item_category.name if item_data.item_category else "",
+                        "condition": item_data.item_condition.name if item_data.item_condition else "Unknown",
+                        "listing_date": item_data.updated.timestamp() if item_data.updated else None,
+                        "num_likes": item_data.num_likes or 0,
+                        "item_url": f"https://jp.mercari.com/item/{item_id}"
+                    }
+
+        except Exception as e:
+            logger.warning(f"[Tier 2: MercapiScraper] get_item_details failed: {e}")
+            raise RuntimeError(f"MercapiScraper get_item_details execution error: {e}")

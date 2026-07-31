@@ -6,7 +6,7 @@ Waits for Next.js App Router client-side hydration to render product grid cells.
 import logging
 import time
 import re
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Dict, Any
 from playwright.async_api import async_playwright
 from src.data_models.query import MercariItem
 from src.backends.mercari.base import BaseMercariSearchTool
@@ -59,7 +59,7 @@ class MercariPlaywrightSearchTool(BaseMercariSearchTool):
                 page = await context.new_page()
 
                 # Navigate to page
-                await page.goto(search_url, wait_until="networkidle", timeout=config.request_timeout_seconds * 1000)
+                await page.goto(search_url, wait_until="networkidle", timeout=config.scraper_timeout_seconds * 1000)
 
                 # !Debug: Clear previous log result
                 with open("./playwright_debug.log", "w") as file:
@@ -220,3 +220,18 @@ class MercariPlaywrightSearchTool(BaseMercariSearchTool):
             jpy = clean_price
 
         return currency_text, clean_price, jpy, usd
+
+
+    #################################
+    ## Get detailed product data
+    # !TODO: Implement Playwright get_item_details mechanism
+    async def get_item_details(self, item_id: str) -> Dict[str, Any]:
+        """(CURRENTLY NOT IMPLEMENTED) Fetches detailed item info using Playwright DOM Extraction"""
+        logger.info(f"[Mercari PlaywrightScraper] Fetching details for item_id: '{item_id}'")
+
+        # Fallback Dict
+        return {
+                    "id": item_id,
+                    "description": f"",
+                    "item_url": f"https://jp.mercari.com/item/{item_id}"
+                }

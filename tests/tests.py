@@ -1,6 +1,14 @@
+# Add parent path to lookup
+from pathlib import Path
+import sys
+# Get the absolute path of the parent directory
+parent_dir = str(Path(__file__).resolve().parent.parent)
+
+# Add the parent directory to sys.path
+sys.path.append(parent_dir)
+
 # Quick sanity test
 from src.config import config
-from src.data_models.query import UserQuery, MercariItem
 from src.guardrails.safety import PromptGuardrail
 from src.llm_providers.llm_manager import LLMFallbackManager
 
@@ -23,6 +31,11 @@ async def test_search():
     for item in results:
         print(f"[{item.source_tier}] {item.condition} - {item.title} - {item.currency} {item.price:,} ({item.item_url})")
     print(results[0])
+
+async def test_get_item_details():
+    manager = MercariSearchManager()
+    results = await manager.get_item_details(item_id="m98368113851")
+    print(results)
 
 async def test_llm():
     manager = LLMFallbackManager()
@@ -50,4 +63,5 @@ async def test_llm():
     print(f"[LLM Test] Tool Calls Generated: {tool_calls}")
 
 #asyncio.run(test_search())
-asyncio.run(test_llm())
+asyncio.run(test_get_item_details())
+#asyncio.run(test_llm())
