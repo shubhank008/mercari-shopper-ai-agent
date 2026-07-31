@@ -20,7 +20,7 @@ Interprets natural language shopping requests, extracts search keyword and const
 
 
 
-# Setup
+# 1. Setup
 
 ## Prerequisites
 - Python 3.10 or higher
@@ -54,7 +54,7 @@ playwright install
 ```
 
 
-# Usage Instructions & Logging Modes
+# 2. Usage Instructions & Logging Modes
 ## Interactive UI Mode (Clean Terminal UI)  
 By default, internal HTTP request logs and execution turn logs are suppressed (LOG_LEVEL=WARNING) to present a clean, formatted terminal UI with animated spinners, tables, and Markdown rendering:
 ```
@@ -70,7 +70,7 @@ To inspect live tool-calling state turns, multi-tier fallback events, HTTP statu
 
 
 
-# Performance Benchmarks
+# 3. Performance Benchmarks
 
 Measured across production test runs (`MacBook Pro 13 M1`, `iPhone 13 Pro`, `Seiko 5`, `limit=25`):
 
@@ -83,7 +83,7 @@ Measured across production test runs (`MacBook Pro 13 M1`, `iPhone 13 Pro`, `Sei
 
 
 
-# Demo Case Study: Autonomous Self-Correction Trace
+# 4. Demo Case Study: Autonomous Self-Correction Trace
 
 When tested with a tricky query - **`find me iphone 13 pro with only new condition`** - the Agent Harness demonstrated **autonomous query refinement** and **multi-turn self-correction**:
 
@@ -120,7 +120,7 @@ When tested with a tricky query - **`find me iphone 13 pro with only new conditi
 ```
 
 
-# Design Architecture
+# 5. Design Architecture
 ## High Level
 User Prompt (Natural Language) **-->** LLM Provider + Tool Call (search_mercari) **-->** RAG (get_item_details) **-->** Detailed Result Injection (LLM) **-->** Reasoned Recommendation (JSON) **-->** Output (User Friendly/Natural Language)
 ## Low Level
@@ -156,7 +156,7 @@ Stage 1 inserts base listing summaries; Stage 2 patches detailed fields (`descri
 4. **Context Budgeting:** Mercari search returns large raw DOM payloads. The Harness strips unnecessary fields, converts prices to standard integer JPY, and truncates long descriptions to keep the LLM context window small and responsive.
 
 
-# Future Improvements
+# 6. Future Improvements
 - Production Session Persistence (Experimental): Extend session state with Redis or PostgreSQL backends for persistent conversation memory across restarts.
 - Test suites to automate regular testing of LLM Provider uptime (API calls, active key, token/balance availability)
 - Test suites to automate regular testing of Mercari Backend (each scraper mecanism working, incase of errors create automated reports or tickets/issues)
@@ -167,7 +167,7 @@ Stage 1 inserts base listing summaries; Stage 2 patches detailed fields (`descri
 - Add Language Translation (JP->Eng) and currency selector (show price in USD or JPY)
 - For Production, final or all Exceptions should be handled into Consumer facing Graceful messages, while internally alerting / logging DevOps
 
-# External Libraries
+# 7. External Libraries
 - **Official LLM SDKs**  
 ```
 anthropic
