@@ -6,16 +6,23 @@ import sys
 import asyncio
 import argparse
 import logging
+from src.config import config
 from src.agent.harness import AgentHarness
 from src.tools.formatter import print_banner, print_search_results_table, print_llm_response
+from rich.console import Console
 
-# Configure Logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-    handlers=[logging.StreamHandler(sys.stdout)]
-)
 logger = logging.getLogger("main")
+console = Console()
+
+def configure_logging(verbose: bool = False):
+    """Sets logging level based on config/env"""
+    log_level = logging.INFO if verbose else getattr(logging, config.log_level.upper(), logging.WARNING)
+    logging.basicConfig(
+        level=log_level,
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        handlers=[logging.StreamHandler(sys.stdout)],
+        force=True
+    )
 
 # Use by passing `query` parameter directly to main.py like: `main.py --query I am looking for a Seiko 5 under 25000`
 async def run_single_query(harness: AgentHarness, query: str):
@@ -25,9 +32,11 @@ async def run_single_query(harness: AgentHarness, query: str):
     print_banner()
     logger.info(f"Processing query: '{query}'")
 
-    final_text, items, provider, tier = await harness.run(query)
+    with console.status("[bold cyan]Searching Mercari Japan. Please wait...[/bold cyan]", spinner="dots"):
+        final_text, items, provider, tier = await harness.run(query)
 
-    if items:
+    # Only print the fetched items table if log level is set to Info (which also prints additional harness logs)
+    if items and config.log_level != "WARNING":
         print_search_results_table(items, tier)
 
     print_llm_response(final_text, provider)
@@ -50,9 +59,19 @@ async def run_interactive_loop(harness: AgentHarness):
                 print("\nThank you for using Mercari AI Shopping Assistant, Goodbye.")
                 break
 
-            final_text, items, provider, tier = await harness.run(user_input)
+            ## !TODO: We should handle it more smartly and automatically, 
+            # perhaps by detecting if the query keyword has changed (user asking about a different product)
+            # Or using a summarizer if Session memory grows beyond a certain point
+            if user_input.lower() == "reset":
+                harness.reset_session()
+                print("[System] Session conversation memory cleared.")
+                continue
 
-            if items:
+            with console.status("[bold cyan]Searching Mercari Japan. Please wait...[/bold cyan]", spinner="dots"):
+                final_text, items, provider, tier, metrics = await harness.run(user_input)
+
+            # Only print the fetched items table if log level is set to Info (which also prints additional harness logs)
+            if items and config.log_level != "WARNING":
                 print_search_results_table(items, tier)
 
             print_llm_response(final_text, provider)
@@ -72,6 +91,8 @@ def main():
         help="Single shopping query in natural language (e.g. 'Find a Macbook 13 under 50000 yen')"
     )
     args = parser.parse_args()
+
+    configure_logging()
 
     harness = AgentHarness()
 

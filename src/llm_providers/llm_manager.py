@@ -42,22 +42,22 @@ class LLMFallbackManager:
         messages: List[Dict[str, Any]],
         tools: List[Dict[str, Any]],
         system_prompt: str
-    ) -> Tuple[str, List[Dict[str, Any]], Any, str]:
+    ) -> Tuple[str, List[Dict[str, Any]], Dict[str, int], Any, str]:
         """
         Attempts tool calling generation across providers sequentially.
-        Returns: (text_content, tool_calls, raw_response, active_provider_name)
+        Returns: (text_content, tool_calls, token_usage, raw_response, active_provider_name)
         """
         last_exception = None
 
         for provider in self.providers:
             try:
                 logger.info(f"Attempting tool call with LLM Provider: {provider.provider_name}")
-                text, tool_calls, raw_resp = await provider.generate_tool_call(
+                text, tool_calls, usage, raw_resp = await provider.generate_tool_call(
                     messages=messages,
                     tools=tools,
                     system_prompt=system_prompt
                 )
-                return text, tool_calls, raw_resp, provider.provider_name
+                return text, tool_calls, usage, raw_resp, provider.provider_name
 
             except Exception as e:
                 last_exception = e

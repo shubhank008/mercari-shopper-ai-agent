@@ -22,7 +22,7 @@ class BaseLLMProvider(ABC):
         messages: List[Dict[str, Any]],
         tools: List[Dict[str, Any]],
         system_prompt: str
-    ) -> Tuple[str, List[Dict[str, Any]], Any]:
+    ) -> Tuple[str, List[Dict[str, Any]], Dict[str, int], Any]:
         """
         Sends context prompt and tool schemas to LLM.
         Returns: (text_content: str, tool_calls: List[Dict], raw_response)

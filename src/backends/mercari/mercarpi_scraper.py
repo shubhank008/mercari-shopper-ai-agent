@@ -114,10 +114,10 @@ class MercariMercapiSearchTool(BaseMercariSearchTool):
                 id_=item_id
             )
             
-            if not item_data or item_data.id_:
+            if not item_data or not item_data.id_:
                 # Return empty dictionary as we will patch valid results with existing MercariItem
                 return {}
-
+            
             return {
                         "id": item_id,
                         "title": item_data.name or "",
@@ -136,5 +136,5 @@ class MercariMercapiSearchTool(BaseMercariSearchTool):
                     }
 
         except Exception as e:
-            logger.warning(f"[Tier 2: MercapiScraper] get_item_details failed: {e}")
+            logger.info(f"[Tier 2: MercapiScraper] get_item_details failed: {e}")
             raise RuntimeError(f"MercapiScraper get_item_details execution error: {e}")

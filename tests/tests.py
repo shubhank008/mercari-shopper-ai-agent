@@ -1,6 +1,7 @@
 # Add parent path to lookup
 from pathlib import Path
 import sys
+import logging
 # Get the absolute path of the parent directory
 parent_dir = str(Path(__file__).resolve().parent.parent)
 
@@ -25,6 +26,16 @@ print(f"=" * 50)
 import asyncio
 from src.backends.mercari.mercari_search import MercariSearchManager
 
+def configure_logging(verbose: bool = False):
+    """Sets logging level based on config/env"""
+    log_level = logging.INFO if verbose else getattr(logging, config.log_level.upper(), logging.WARNING)
+    logging.basicConfig(
+        level=log_level,
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        handlers=[logging.StreamHandler(sys.stdout)],
+        force=True
+    )
+
 async def test_search():
     manager = MercariSearchManager()
     results = await manager.search(keyword="Seiko 5 watch", min_price=6000, max_price=25000, limit=config.max_items_per_search)
@@ -34,6 +45,12 @@ async def test_search():
 
 async def test_get_item_details():
     manager = MercariSearchManager()
+    results = await manager.get_item_details(item_id="m98368113851")
+    print(results)
+
+async def test_get_item_details_mercapi():
+    from src.backends.mercari.mercarpi_scraper import MercariMercapiSearchTool
+    manager = MercariMercapiSearchTool()
     results = await manager.get_item_details(item_id="m98368113851")
     print(results)
 
@@ -62,6 +79,9 @@ async def test_llm():
     print(f"\n[LLM Test] Provider Used: {provider}")
     print(f"[LLM Test] Tool Calls Generated: {tool_calls}")
 
+configure_logging(verbose=True)
+
 #asyncio.run(test_search())
-asyncio.run(test_get_item_details())
+#asyncio.run(test_get_item_details())
+asyncio.run(test_get_item_details_mercapi())
 #asyncio.run(test_llm())

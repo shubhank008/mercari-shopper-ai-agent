@@ -30,7 +30,7 @@ class ClaudeProvider(BaseLLMProvider):
         messages: List[Dict[str, Any]],
         tools: List[Dict[str, Any]],
         system_prompt: str
-    ) -> Tuple[str, List[Dict[str, Any]], Any]:
+    ) -> Tuple[str, List[Dict[str, Any]], Dict[str, int], Any]:
         logger.info(f"[{self.provider_name}] Generating completion with tool definitions...")
 
         response = await self.client.messages.create(
@@ -55,7 +55,13 @@ class ClaudeProvider(BaseLLMProvider):
                     "arguments": block.input
                 })
 
-        return text_content, tool_calls, response
+        # Token metrics dict
+        token_usage = {
+            "input_tokens": response.usage.input_tokens,
+            "output_tokens": response.usage.output_tokens
+        }
+
+        return text_content, tool_calls, token_usage, response
 
     async def generate_final_response(
         self,

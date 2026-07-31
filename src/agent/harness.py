@@ -5,6 +5,7 @@ Manages tool-calling, execution, state machine, provider failovers and session c
 
 import json
 import logging
+import time
 from typing import List, Dict, Any, Tuple
 from src.llm_providers.llm_manager import LLMFallbackManager
 from src.backends.mercari.mercari_search import MercariSearchManager
@@ -20,6 +21,7 @@ class AgentHarness:
     """Agent Harness runtime controlling multi-step tool loops and session state."""
 
     def __init__(self):
+        self.start_time = time.perf_counter()
         self.llm_manager = LLMFallbackManager()
         self.search_manager = MercariSearchManager()
         
@@ -29,6 +31,21 @@ class AgentHarness:
             "search_mercari": self._execute_search_tool,
             "get_item_details": self._execute_item_details_tool
         }
+
+        # Persistent Session Memory
+        self.conversation_history: List[Dict[str, Any]] = []
+        # Single Source of Truth for Session State
+        # search_mercari fetches us partial data, which we hydrate with detailed data from get_item_data
+        self.session_items_map: Dict[str, MercariItem] = {}
+
+        init_duration_ms = round((time.perf_counter() - self.start_time) * 1000, 2)
+        logger.info(f"Agent Harness Initialization Completed in {init_duration_ms}ms")
+
+    def reset_session(self):
+        """Clears active session conversation memory and items map."""
+        self.conversation_history = []
+        self.session_items_map = {}
+        logger.info("Session conversation memory reset.")
 
     async def _execute_search_tool(self, **kwargs) -> Tuple[List[MercariItem], str]:
         """Tool execution handler for Mercari product searching."""
@@ -69,27 +86,35 @@ class AgentHarness:
     ############################
     ## MAIN Loop
     ###########################
-    async def run(self, user_prompt: str) -> Tuple[str, List[MercariItem], str, str]:
+    async def run(self, user_prompt: str) -> Tuple[str, List[MercariItem], str, str, Dict[str, Any]]:
         """
         Executes autonomous agent loop across multiple reasoning turns for the user's query.
         Returns: (final_recommendation_text, retrieved_items, active_provider, active_tier)
         """
+        self.start_time = time.perf_counter()
 
         # Safety Guardrail Check
         is_safe, warning_msg = PromptGuardrail.validate_prompt(user_prompt)
         if not is_safe:
             return warning_msg, [], "Guardrail", "None"
 
-        # Prompt Builder
-        messages: List[Dict[str, Any]] = [
-            {"role": "user", "content": user_prompt}
-        ]
+        # Session Memory Management
+        if config.enable_session_memory and self.conversation_history:
+            self.conversation_history.append({"role": "user", "content": user_prompt})
+            messages = self.conversation_history
+        else:
+            messages = [{"role": "user", "content": user_prompt}]
+            if config.enable_session_memory:
+                self.conversation_history = messages
 
-        # Single Source of Truth for Session State
-        # search_mercari fetches us partial data, which we hydrate with detailed data from get_item_data
-        retrieved_items_map: Dict[str, MercariItem] = {}
         active_tier = "None"
         active_provider = "Unknown"
+        total_input_tokens = 0
+        total_output_tokens = 0
+
+        # Reset message history of sessions memory is not enabled
+        if not config.enable_session_memory:
+            self.reset_session()
 
         # Tool-Calling and Multi-Turn State Loop
         # Agent manages initial response, tool_calls and final response through Turn-based step loops
@@ -97,24 +122,53 @@ class AgentHarness:
         # !TODO: We have implemented Sequential Tool Chaining, but there is scope to add Self-Correction on Tool Failure too
         for loop_count in range(config.max_tool_call_loops):
             logger.info(f"Mercari Agent Harness Loop - Turn {loop_count + 1}/{config.max_tool_call_loops}")
+            turn_llm_start = time.perf_counter()
 
             # Send System Prompt, User Prompt and tool definitions to LLM
             # This step extracts us the product keyword and other parameters from user prompt for Tool Calling (mercari_search)
             # raw_resp can be used for Debug
-            text_content, tool_calls, raw_resp, provider = await self.llm_manager.generate_tool_call(
+            text_content, tool_calls, token_usage, raw_resp, provider = await self.llm_manager.generate_tool_call(
                 messages=messages,
                 tools=TOOL_DEFINITIONS,
                 system_prompt=SYSTEM_PROMPT
             )
+            llm_turn_ms = round((time.perf_counter() - turn_llm_start) * 1000, 2)
             active_provider = provider
+
+            # Accumulate Token Usage
+            in_tok = token_usage.get("input_tokens", 0)
+            out_tok = token_usage.get("output_tokens", 0)
+            total_input_tokens += in_tok
+            total_output_tokens += out_tok
+
+            logger.info(
+                f"[Turn {loop_count + 1} Metrics] Latency: {llm_turn_ms}ms | "
+                f"Tokens: {in_tok} in / {out_tok} out"
+            )
 
             # -------------------------------------------------------------
             # EXIT POINT: If tool_calls is empty, LLM generated final response!
             # -------------------------------------------------------------
             if not tool_calls:
                 logger.info(f"{provider} returned text without requesting tool calls. State loop completed, RETURNING RESULTS.")
-                retrieved_items = list(retrieved_items_map.values())
-                return text_content, retrieved_items, active_provider, active_tier
+                # Append agent final response to conversation memory
+                if config.enable_session_memory:
+                    self.conversation_history.append({"role": "assistant", "content": text_content})
+
+                total_duration_ms = round((time.perf_counter() - self.start_time) * 1000, 2)
+                metrics = {
+                    "total_duration_ms": total_duration_ms,
+                    "total_input_tokens": total_input_tokens,
+                    "total_output_tokens": total_output_tokens,
+                    "total_turns": loop_count + 1
+                }
+                logger.info(
+                    f"[SESSION SUMMARY] Duration: {total_duration_ms}ms | "
+                    f"Total Tokens: {total_input_tokens + total_output_tokens}"
+                )
+
+                retrieved_items = list(self.session_items_map.values())
+                return text_content, retrieved_items, active_provider, active_tier, metrics
 
             # Record tool request in message history for assistant message turn
             assistant_content = []
@@ -152,8 +206,8 @@ class AgentHarness:
 
                         # Store newly discovered search items in session map
                         for item in items:
-                            if item.item_id not in retrieved_items_map:
-                                retrieved_items_map[item.item_id] = item
+                            if item.item_id not in self.session_items_map:
+                                self.session_items_map[item.item_id] = item
 
                         # Format and sanitize item data for LLM context
                         item_dicts = [item.model_dump() for item in items]                      # Pydantic model to Dict
@@ -170,10 +224,10 @@ class AgentHarness:
                         context_payload_list = []
                         for detailed_item in detailed_items:
                             item_id = detailed_item.get("id")
-                            if item_id in retrieved_items_map:
-                                existing_item = retrieved_items_map[item_id]
-                                retrieved_items_map[item_id] = existing_item.model_copy(update=detailed_item)      # Pydantic validation and update existing model using dict
-                                context_payload_list.append(retrieved_items_map[item_id].model_dump())
+                            if item_id in self.session_items_map:
+                                existing_item = self.session_items_map[item_id]
+                                self.session_items_map[item_id] = existing_item.model_copy(update=detailed_item)      # Pydantic validation and update existing model using dict
+                                context_payload_list.append(self.session_items_map[item_id].model_dump())
 
                         # Format and sanitize item data for LLM context
                         sanitized_dicts = ContextSanitizer.prepare_items_for_context(
@@ -214,5 +268,12 @@ class AgentHarness:
             #)
             #active_provider = provider
             #return final_text, retrieved_items, active_provider, active_tier
-        final_items = list(retrieved_items_map.values())
-        return "Agent reached maximum step-turns limit", retrieved_items, active_provider, active_tier
+        
+        total_duration_ms = round((time.perf_counter() - self.start_time) * 1000, 2)
+        metrics = {
+            "total_duration_ms": total_duration_ms,
+            "total_input_tokens": total_input_tokens,
+            "total_output_tokens": total_output_tokens,
+        }
+        final_items = list(self.session_items_map.values())
+        return "Agent reached maximum step-turns limit", final_items, active_provider, active_tier, metrics
