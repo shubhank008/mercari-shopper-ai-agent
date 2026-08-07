@@ -17,6 +17,11 @@ Interprets natural language shopping requests, extracts search keyword and const
 * **Security Guardrails & Context Optimization**:
   * **PromptGuardrail**: Scans incoming prompts against malicious jailbreak and prompt override regex patterns prior to LLM processing.
   * **ContextSanitizer**: Strips raw HTML and truncates text descriptions, reducing context window bloat and token costs by ~75%.
+ 
+
+<img height="1000" alt="chrome_h0gfHxKnfT" src="https://github.com/user-attachments/assets/0218eb6c-a19f-4d82-8ab9-03e375685c2c" />
+<img height="1000" alt="chrome_wcUUVUoP1u" src="https://github.com/user-attachments/assets/bfc4ec15-7be8-43e4-9aae-8c8717a1cb6e" />
+
 
 
 
