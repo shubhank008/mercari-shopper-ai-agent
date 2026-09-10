@@ -8,34 +8,46 @@ from typing import List, Dict, Any, Tuple
 from src.llm_providers.base import BaseLLMProvider
 from src.llm_providers.claude_provider import ClaudeProvider
 from src.llm_providers.openai_provider import OpenAIProvider
+from src.llm_providers.opencodego_provider import OpenCodeGoProvider
 from src.config import config
 
 logger = logging.getLogger(__name__)
 
 
 class LLMFallbackManager:
-    """Manages fallback execution across Anthropic Claude and OpenAI GPT providers."""
+    """Manages a configured primary provider and optional deterministic fallbacks."""
 
-    def __init__(self):
+    _provider_factories = {
+        "anthropic": ClaudeProvider,
+        "openai": OpenAIProvider,
+        "opencodego": OpenCodeGoProvider,
+    }
+    _fallback_order = ("anthropic", "openai", "opencodego")
+
+    def __init__(self) -> None:
         self.providers: List[BaseLLMProvider] = []
-
-        # Attempt to initialize Primary Provider (Claude)
-        try:
-            self.providers.append(ClaudeProvider())
-            logger.info("Initialized Primary LLM Provider: Claude")
-        except Exception as e:
-            logger.warning(f"Could not initialize Primary LLM Provider (Claude): {e}")
-
-        # Attempt to initialize Fallback Provider (OpenAI) if enabled
+        provider_names = [config.llm_primary_provider]
         if config.enable_llm_fallback:
-            try:
-                self.providers.append(OpenAIProvider())
-                logger.info("Initialized Fallback LLM Provider: OpenAI")
-            except Exception as e:
-                logger.warning(f"Could not initialize Fallback LLM Provider (OpenAI): {e}")
+            provider_names.extend(
+                name for name in self._fallback_order if name != config.llm_primary_provider
+            )
+
+        for name in provider_names:
+            self._initialize_provider(name, primary=name == config.llm_primary_provider)
 
         if not self.providers:
-            raise RuntimeError("No LLM Providers could be initialized. Please check your API keys in .env.")
+            raise RuntimeError("No LLM providers could be initialized. Check the selected provider credentials.")
+
+    def _initialize_provider(self, name: str, primary: bool) -> None:
+        """Initialize one configured provider without preventing later fallbacks."""
+        try:
+            provider = self._provider_factories[name]()
+            self.providers.append(provider)
+            role = "primary" if primary else "fallback"
+            logger.info("Initialized %s LLM provider: %s", role, provider.provider_name)
+        except Exception as exc:
+            role = "primary" if primary else "fallback"
+            logger.warning("Could not initialize %s LLM provider %s: %s", role, name, exc)
 
     async def generate_tool_call(
         self,

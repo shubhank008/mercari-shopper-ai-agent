@@ -3,7 +3,7 @@ Configuration module for Mercari AI Shopper.
 Centralizes environment variable loading, default thresholds, and feature flags.
 """
 
-from typing import Optional
+from typing import Literal, Optional
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -20,6 +20,14 @@ class AppConfig(BaseSettings):
     # API Keys
     anthropic_api_key: Optional[str] = None
     openai_api_key: Optional[str] = None
+    opencodego_api_key: Optional[str] = None
+
+    # Provider selection and model configuration
+    llm_primary_provider: Literal["anthropic", "openai", "opencodego"] = "anthropic"
+    anthropic_model_id: str = "claude-3-5-sonnet-20240620"
+    openai_model_id: str = "gpt-4o"
+    opencodego_model_id: str = "glm-5.3-flash"
+    opencodego_base_url: str = "https://opencode.ai/zen/go/v1"
 
     # Logging Level (Default: WARNING for clean UI, set to INFO/DEBUG for detailed)
     log_level: str = "WARNING"
@@ -40,11 +48,6 @@ class AppConfig(BaseSettings):
     max_items_for_enrichment: int = 10
     max_description_length: int = 1500
     web_session_idle_seconds: int = 1800
-
-    # Default LLM Models
-    # !TODO: Add these options in .env and declare them as provider-specific models instead of Primary or Fallback, this should be handled by the provider interface
-    anthropic_model_id: str = "claude-3-5-sonnet-20240620"
-    openai_model_id: str = "gpt-4o"
 
     @model_validator(mode="after")
     def validate_rules(self) -> "AppConfig":
