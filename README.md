@@ -1,5 +1,5 @@
 # Mercari Japan AI Shopping Assistant — Agent Harness Engine
-[![Live Demo](https://shields.io)](https://mercari-ai-shopping-assistant.vercel.app/)
+[![Live Demo](https://img.shields.io/badge/Live_Demo-blue)](https://mercari-ai-shopping-assistant.vercel.app/)
 -----
 A production-grade, autonomous **AI Agent Harness** built from scratch in Python.   
 Interprets natural language shopping requests, extracts search keyword and constraints , searches Mercari Japan via resilient multi-tier scrapers with fallback, and executes multi-turn tool chaining   
