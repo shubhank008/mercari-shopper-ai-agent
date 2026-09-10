@@ -48,11 +48,16 @@
         <div class="product-copy">
           <p class="product-kicker"></p>
           <h3></h3>
+          <p class="product-reasoning"></p>
           <div class="product-meta"></div>
           <a class="mercari-link" target="_blank" rel="noopener noreferrer">View on Mercari <span aria-hidden="true">↗</span></a>
         </div>
       </article>
     </template>
+    <div id="lightbox" class="lightbox" role="dialog" aria-modal="true" aria-label="Enlarged product image" hidden>
+      <button id="lightbox-close" class="lightbox-close" type="button" aria-label="Close enlarged image">×</button>
+      <img id="lightbox-image" alt="" />
+    </div>
     <script src="/static/app.js" defer></script>
   </body>
 </html>

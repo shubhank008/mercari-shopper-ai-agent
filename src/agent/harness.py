@@ -37,6 +37,7 @@ class AgentHarness:
         # Single Source of Truth for Session State
         # search_mercari fetches us partial data, which we hydrate with detailed data from get_item_data
         self.session_items_map: Dict[str, MercariItem] = {}
+        self.enriched_item_ids: set[str] = set()
 
         init_duration_ms = round((time.perf_counter() - self.start_time) * 1000, 2)
         logger.info(f"Agent Harness Initialization Completed in {init_duration_ms}ms")
@@ -45,6 +46,7 @@ class AgentHarness:
         """Clears active session conversation memory and items map."""
         self.conversation_history = []
         self.session_items_map = {}
+        self.enriched_item_ids = set()
         logger.info("Session conversation memory reset.")
 
     async def _execute_search_tool(self, **kwargs) -> Tuple[List[MercariItem], str]:
@@ -226,7 +228,10 @@ class AgentHarness:
                             item_id = detailed_item.get("id")
                             if item_id in self.session_items_map:
                                 existing_item = self.session_items_map[item_id]
-                                self.session_items_map[item_id] = existing_item.model_copy(update=detailed_item)      # Pydantic validation and update existing model using dict
+                                updated_item = existing_item.model_dump()
+                                updated_item.update({key: value for key, value in detailed_item.items() if value is not None})
+                                self.session_items_map[item_id] = MercariItem.model_validate(updated_item)
+                                self.enriched_item_ids.add(item_id)
                                 context_payload_list.append(self.session_items_map[item_id].model_dump())
 
                         # Format and sanitize item data for LLM context

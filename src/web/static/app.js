@@ -3,6 +3,9 @@ const input = document.querySelector("#message");
 const messages = document.querySelector("#messages");
 const send = document.querySelector("#send");
 const productTemplate = document.querySelector("#product-template");
+const lightbox = document.querySelector("#lightbox");
+const lightboxImage = document.querySelector("#lightbox-image");
+const lightboxClose = document.querySelector("#lightbox-close");
 const sessionId = crypto.randomUUID();
 
 /** Append a chat bubble and return it for optional follow-up content. */
@@ -23,24 +26,36 @@ function priceText(product) {
   return "Price unavailable";
 }
 
-/** Render trusted listing data without interpreting recommendation prose. */
+/** Open a product image in the accessible enlarged viewer. */
+function openLightbox(url, alt) {
+  lightboxImage.src = url;
+  lightboxImage.alt = alt;
+  lightbox.hidden = false;
+  lightboxClose.focus();
+  console.info("[WEB_IMAGE_LIGHTBOX_OPENED]");
+}
+
+/** Render trusted listing data with explicit shopping labels. */
 function renderProduct(product) {
   const card = productTemplate.content.firstElementChild.cloneNode(true);
   const track = card.querySelector(".image-track");
   const title = card.querySelector("h3");
   const kicker = card.querySelector(".product-kicker");
+  const reasoning = card.querySelector(".product-reasoning");
   const meta = card.querySelector(".product-meta");
   const link = card.querySelector(".mercari-link");
 
   title.textContent = product.title;
-  kicker.textContent = `${priceText(product)} · ${product.condition}`;
+  kicker.textContent = priceText(product);
+  reasoning.textContent = product.reasoning;
   link.href = product.item_url;
   [
-    product.seller_rating_score != null ? `Seller ${product.seller_rating_score}/5` : null,
-    product.seller_total_ratings != null ? `${product.seller_total_ratings} ratings` : null,
-    product.num_likes != null ? `${product.num_likes} likes` : null,
-    product.source_tier,
-  ].filter(Boolean).forEach((value) => {
+    `Condition: ${product.condition || "Not available"}`,
+    `Seller: ${product.seller_name || "Not available"}`,
+    `Seller Rating: ${product.seller_rating_score != null ? `${product.seller_rating_score}/5` : "Not available"}`,
+    `Total Ratings: ${product.seller_total_ratings ?? "Not available"}`,
+    `Likes: ${product.num_likes ?? "Not available"}`,
+  ].forEach((value) => {
     const item = document.createElement("span");
     item.textContent = value;
     meta.append(item);
@@ -52,6 +67,11 @@ function renderProduct(product) {
       image.src = url;
       image.alt = `${product.title}, image ${index + 1}`;
       image.loading = "lazy";
+      image.tabIndex = 0;
+      image.addEventListener("click", () => openLightbox(url, image.alt));
+      image.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") openLightbox(url, image.alt);
+      });
       track.append(image);
     });
   } else {
@@ -63,29 +83,50 @@ function renderProduct(product) {
   return card;
 }
 
-/** Add recommendation metadata and visual listing cards to an assistant response. */
+/** Render the complete shortlist as a comparison table. */
+function renderComparison(shortlist) {
+  const section = document.createElement("section");
+  section.className = "comparison-section";
+  section.innerHTML = '<div class="section-heading"><p class="eyebrow">Shortlist comparison</p><h2>Every promising listing, side by side.</h2></div>';
+  const wrapper = document.createElement("div");
+  wrapper.className = "comparison-scroll";
+  const table = document.createElement("table");
+  table.innerHTML = '<thead><tr><th>Rank</th><th>Listing</th><th>Price</th><th>Condition</th><th>Seller</th><th>Seller Rating</th><th>Total Ratings</th><th>Likes</th><th></th></tr></thead>';
+  const body = document.createElement("tbody");
+  shortlist.forEach((product, index) => {
+    const row = document.createElement("tr");
+    row.innerHTML = `<td>${index + 1}</td><td class="table-title"></td><td class="table-price"></td><td></td><td></td><td></td><td></td><td></td><td></td>`;
+    row.querySelector(".table-title").textContent = product.title;
+    row.querySelector(".table-price").textContent = priceText(product);
+    const values = [product.condition || "Not available", product.seller_name || "Not available", product.seller_rating_score != null ? `${product.seller_rating_score}/5` : "Not available", product.seller_total_ratings ?? "Not available", product.num_likes ?? "Not available"];
+    row.querySelectorAll("td").forEach((cell, cellIndex) => { if (cellIndex >= 3 && cellIndex <= 7) cell.textContent = values[cellIndex - 3]; });
+    const link = document.createElement("a");
+    link.href = product.item_url;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = "View ↗";
+    row.lastElementChild.append(link);
+    body.append(row);
+  });
+  table.append(body);
+  wrapper.append(table);
+  section.append(wrapper);
+  return section;
+}
+
+/** Add reasoning, full comparison, and final top-three recommendation cards. */
 function addRecommendation(response) {
   const message = addMessage("assistant", response.recommendation, "Mercari Scout");
-  const metadata = document.createElement("div");
-  metadata.className = "recommendation-metadata";
-  [
-    response.provider,
-    response.search_tier !== "None" ? response.search_tier : null,
-    response.metrics.total_duration_ms != null ? `${Math.round(response.metrics.total_duration_ms)} ms` : null,
-    response.metrics.total_turns != null ? `${response.metrics.total_turns} turns` : null,
-  ].filter(Boolean).forEach((value) => {
-    const tag = document.createElement("span");
-    tag.textContent = value;
-    metadata.append(tag);
-  });
-  message.append(metadata);
-
-  if (response.products.length) {
-    const grid = document.createElement("div");
-    grid.className = "product-grid";
-    response.products.forEach((product) => grid.append(renderProduct(product)));
-    message.append(grid);
-  }
+  const shortlist = response.shortlist || response.products || [];
+  if (shortlist.length) message.append(renderComparison(shortlist));
+  const finalHeading = document.createElement("div");
+  finalHeading.className = "section-heading final-heading";
+  finalHeading.innerHTML = '<p class="eyebrow">Final purchase recommendation</p><h2>The three worth a closer look.</h2>';
+  message.append(finalHeading);
+  const grid = document.createElement("div");
+  grid.className = "product-grid";
+  response.products.forEach((product) => grid.append(renderProduct(product)));
+  message.append(grid);
 }
 
 /** Submit a request and keep the composer available after every outcome. */
@@ -141,4 +182,17 @@ document.querySelectorAll("[data-prompt]").forEach((button) => {
 input.addEventListener("input", () => {
   input.style.height = "auto";
   input.style.height = `${Math.min(input.scrollHeight, 140)}px`;
+});
+
+function closeLightbox() {
+  lightbox.hidden = true;
+  lightboxImage.removeAttribute("src");
+}
+
+lightboxClose.addEventListener("click", closeLightbox);
+lightbox.addEventListener("click", (event) => {
+  if (event.target === lightbox) closeLightbox();
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !lightbox.hidden) closeLightbox();
 });

@@ -11,3 +11,11 @@
 - [x] Add deterministic tests and visual evidence.
 - [x] Update README deployment documentation and audit roadmap.
 - [ ] Commit focused changes and run the publication gate.
+
+## 003: Rich recommendation presentation
+
+- [x] Specify clean comparison and recommendation-card presentation.
+- [x] Return complete shortlist and enriched top-three fields.
+- [x] Implement comparison table, reasoning, labels, and image lightbox.
+- [x] Add regression tests and visual validation.
+- [ ] Commit and publish the refinement.
