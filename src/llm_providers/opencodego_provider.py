@@ -8,7 +8,7 @@ from uuid import uuid4
 from openai import AsyncOpenAI
 
 from src.config import config
-from src.llm_providers.base import BaseLLMProvider
+from src.llm_providers.base import BaseLLMProvider, normalize_openai_messages
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +62,7 @@ class OpenCodeGoProvider(BaseLLMProvider):
         logger.info("[OPENCODEGO_REQUEST] model=%s", self.model)
         response = await self.client.chat.completions.create(
             model=self.model,
-            messages=[{"role": "system", "content": system_prompt}] + messages,
+            messages=normalize_openai_messages(messages, system_prompt),
             tools=self._convert_tools_to_openai_format(tools),
             tool_choice="auto",
             max_tokens=2048,
@@ -95,7 +95,7 @@ class OpenCodeGoProvider(BaseLLMProvider):
         logger.info("[OPENCODEGO_REQUEST] model=%s", self.model)
         response = await self.client.chat.completions.create(
             model=self.model,
-            messages=[{"role": "system", "content": system_prompt}] + messages,
+            messages=normalize_openai_messages(messages, system_prompt),
             max_tokens=2048,
             timeout=config.llm_timeout_seconds,
         )

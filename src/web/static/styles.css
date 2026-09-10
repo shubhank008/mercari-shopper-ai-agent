@@ -52,7 +52,7 @@ h1 { max-width: 680px; margin: 0; font: 600 clamp(2.8rem, 7vw, 5.6rem)/.96 "Frau
 .mercari-link { color: var(--accent); font: 600 .75rem "DM Mono", monospace; text-decoration: none; }
 .mercari-link:hover { text-decoration: underline; }
 .composer { position: sticky; bottom: 16px; display: grid; grid-template-columns: 1fr auto; gap: 10px; padding: 10px; border: 1px solid rgba(27,36,33,.13); border-radius: 16px; background: rgba(255,253,248,.90); backdrop-filter: blur(12px); box-shadow: var(--shadow); }
-.composer textarea { resize: none; min-height: 48px; max-height: 140px; padding: 13px 10px; outline: none; border: none; color: var(--ink); background: transparent; line-height: 1.4; }
+.composer textarea { resize: none; min-height: 72px; max-height: 140px; padding: 13px 10px; outline: none; border: none; color: var(--ink); background: transparent; line-height: 1.4; }
 .composer textarea::placeholder { color: #8c948e; }
 .composer button { align-self: stretch; padding: 0 17px; border: none; border-radius: 10px; color: white; background: var(--accent); font: 500 .78rem "DM Mono", monospace; transition: transform .2s ease, background .2s ease; }
 .composer button:hover:not(:disabled) { background: #ba3c27; transform: translateY(-1px); }
