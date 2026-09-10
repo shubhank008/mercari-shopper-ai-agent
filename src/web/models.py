@@ -1,0 +1,47 @@
+"""Typed request and presentation models for the browser demo."""
+
+from typing import Optional
+
+from pydantic import BaseModel, Field, field_validator
+
+
+class ChatRequest(BaseModel):
+    """A browser message associated with an opaque, page-scoped session."""
+
+    session_id: str = Field(min_length=1, max_length=128)
+    message: str = Field(min_length=1, max_length=4_000)
+
+    @field_validator("message")
+    @classmethod
+    def strip_message(cls, value: str) -> str:
+        """Reject whitespace-only requests before invoking the harness."""
+        value = value.strip()
+        if not value:
+            raise ValueError("Message cannot be empty.")
+        return value
+
+
+class ProductCard(BaseModel):
+    """Safe presentation data derived from a trusted Mercari listing."""
+
+    item_id: str
+    title: str
+    item_url: str
+    image_urls: list[str] = Field(default_factory=list)
+    price_jpy: Optional[float] = None
+    price_usd: Optional[float] = None
+    condition: str
+    seller_rating_score: Optional[float] = None
+    seller_total_ratings: Optional[int] = None
+    num_likes: Optional[int] = None
+    source_tier: str
+
+
+class ChatResponse(BaseModel):
+    """The final harness answer and associated recommendation metadata."""
+
+    recommendation: str
+    provider: str
+    search_tier: str
+    metrics: dict[str, float | int]
+    products: list[ProductCard] = Field(default_factory=list)

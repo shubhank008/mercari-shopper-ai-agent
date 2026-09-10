@@ -163,10 +163,9 @@ class MercariWebSearchTool(BaseMercariSearchTool):
             # Convert our condition_map dict to list, its index will let us access its key value
             condition_string = list(self.CONDITION_MAP)[conditionId-1] or "any"
 
-            # Item image
-            image_url = item.get("thumbnails", [""])[0] if item.get("thumbnails") else None
-            # Split and remove the trailing timestamp/identifier in image_url
-            image_url = image_url.split("?")[0] if image_url else None
+            # Preserve every thumbnail while keeping the first image for existing consumers.
+            image_urls = [thumbnail.split("?")[0] for thumbnail in item.get("thumbnails", []) if thumbnail]
+            image_url = image_urls[0] if image_urls else None
 
             # !TODO: Mercari search API returns price in JPY only, however provides another endpoint to get exchange-rate for USD
             # /getCurrencyConversionRate/country?country_code=XX
@@ -182,6 +181,7 @@ class MercariWebSearchTool(BaseMercariSearchTool):
                     condition=condition_string,
                     item_url=f"https://jp.mercari.com/item/{item_id}",
                     image_url=image_url,
+                    image_urls=image_urls,
                     description=None,
                     listing_date=float(item.get("updated", 0)),               # Using updated instead of created timestamp
                     source_tier="DirectAPI WebScraper",

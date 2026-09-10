@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="A visual chat demo for the Mercari AI Shopper Agent Harness." />
+    <title>Mercari Scout</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="masthead">
+        <a class="brand" href="/" aria-label="Start a new Mercari Scout session">
+          <span class="brand-mark">M</span>
+          <span>Mercari <em>Scout</em></span>
+        </a>
+        <p class="session-note">A fresh scout session starts every time this page loads.</p>
+      </header>
+
+      <section class="intro" aria-labelledby="page-title">
+        <p class="eyebrow">Agent harness demo</p>
+        <h1 id="page-title">Find the listing worth bringing home.</h1>
+        <p class="lede">Tell the Scout what you are after. It searches Mercari Japan, compares promising listings, and returns the details that matter.</p>
+      </section>
+
+      <section id="messages" class="messages" aria-live="polite" aria-label="Shopping conversation">
+        <article class="message assistant welcome-message">
+          <p class="message-label">Mercari Scout</p>
+          <p>I am ready when you are. Try a specific item, your budget, and the condition you want.</p>
+          <div class="suggestions" aria-label="Suggested queries">
+            <button type="button" data-prompt="Find a vintage Seiko 5 watch under 25000 yen in good condition">Vintage Seiko 5 under ¥25,000</button>
+            <button type="button" data-prompt="Find an iPhone 13 Pro in new condition under 90000 yen">New iPhone 13 Pro under ¥90,000</button>
+            <button type="button" data-prompt="Find a Canon film camera under 30000 yen">Canon film camera under ¥30,000</button>
+          </div>
+        </article>
+      </section>
+
+      <form id="chat-form" class="composer">
+        <label class="sr-only" for="message">Shopping request</label>
+        <textarea id="message" name="message" rows="1" maxlength="4000" placeholder="What are you looking for?" required></textarea>
+        <button id="send" type="submit"><span>Search</span><span aria-hidden="true">↗</span></button>
+      </form>
+      <p class="disclaimer">Listings and prices can change. Confirm availability directly on Mercari before buying.</p>
+    </main>
+    <template id="product-template">
+      <article class="product-card">
+        <div class="image-track"></div>
+        <div class="product-copy">
+          <p class="product-kicker"></p>
+          <h3></h3>
+          <div class="product-meta"></div>
+          <a class="mercari-link" target="_blank" rel="noopener noreferrer">View on Mercari <span aria-hidden="true">↗</span></a>
+        </div>
+      </article>
+    </template>
+    <script src="/static/app.js" defer></script>
+  </body>
+</html>

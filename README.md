@@ -73,9 +73,48 @@ python main.py --query "Find a vintage Seiko 5 watch under 25000 yen in good con
 ## Verbose Execution Mode
 To inspect live tool-calling state turns, multi-tier fallback events, HTTP status codes, and turn-by-turn token/cost metrics, set `LOG_LEVEL=INFO` in `.env`.
 
+## Web demo
+The browser demo uses the same `AgentHarness` as the CLI. It starts a new in-memory session on every page load, so reloading the page clears its conversation context. Final recommendations include typed Mercari product cards with all available listing images, source metadata, and links that open Mercari in a new tab.
+
+Run it locally after installing dependencies and configuring `.env`:
+
+```bash
+python -m uvicorn src.web.app:app --reload --host 127.0.0.1 --port 8000
+```
+
+Open `http://127.0.0.1:8000`. The health endpoint is available at `/health` for deployment checks.
+
+# 3. Deployment
+
+All deployments require the same environment variables as the CLI. Set `ANTHROPIC_API_KEY` for normal operation. Set `OPENAI_API_KEY` only when using the optional fallback provider. Never commit `.env` files or provider keys.
+
+## Docker
+
+Build and run the web demo locally:
+
+```bash
+docker build -t mercari-shopper .
+docker run --rm -p 8000:8000 --env-file .env mercari-shopper
+```
+
+The container listens on `$PORT` and defaults to `8000`. Docker deployment uses the included `Dockerfile` and starts `uvicorn src.web.app:app`.
+
+## Railway
+
+1. Create a new Railway project from this repository.
+2. Add `ANTHROPIC_API_KEY` and any optional configuration variables in Railway's Variables page.
+3. Deploy. Railway reads `railway.toml`, starts the shared ASGI application, and checks `/health`.
+
+## Vercel
+
+1. Import this repository into Vercel.
+2. Add `ANTHROPIC_API_KEY` and any optional configuration variables in Project Settings, Environment Variables.
+3. Deploy. `vercel.json` routes requests to `api/index.py`, which exports the same ASGI app.
+
+Vercel serverless functions have an execution time limit and in-memory sessions are instance-local. The demo therefore starts a fresh page-scoped session by design and is best suited for interactive evaluation rather than persistent shopping conversations.
 
 
-# 3. Performance Benchmarks
+# 4. Performance Benchmarks
 
 Measured across production test runs (`MacBook Pro 13 M1`, `iPhone 13 Pro`, `Seiko 5`, `limit=25`):
 
