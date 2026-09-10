@@ -58,6 +58,22 @@ playwright install-deps
 playwright install
 ```
 
+## LLM provider selection
+
+Select the primary provider with `LLM_PRIMARY_PROVIDER`. Supported values are `anthropic`, `openai`, and `opencodego`. Configure the matching API key and model ID in `.env`:
+
+```bash
+# OpenCode Go uses its OpenAI-compatible chat-completions API.
+LLM_PRIMARY_PROVIDER=opencodego
+OPENCODEGO_API_KEY=your_opencode_go_api_key_here
+OPENCODEGO_MODEL_ID=glm-5.3-flash
+OPENCODEGO_BASE_URL=https://opencode.ai/zen/go/v1
+```
+
+`glm-5.3-flash` is the default OpenCode Go model because it is documented for the compatible `/chat/completions` endpoint. Other models available on that endpoint can be selected with `OPENCODEGO_MODEL_ID`. The adapter sends an opaque session header per harness instance, as required by OpenCode Go for routing and prompt caching. Do not log or share this session identifier.
+
+Set `ENABLE_LLM_FALLBACK=false` to use only the selected primary provider. When fallback is enabled, the selected provider runs first, followed by any configured providers in deterministic Anthropic, OpenAI, OpenCode Go order.
+
 
 # 2. Usage Instructions & Logging Modes
 ## Interactive UI Mode (Clean Terminal UI)  

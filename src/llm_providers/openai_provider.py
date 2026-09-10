@@ -80,7 +80,7 @@ class OpenAIProvider(BaseLLMProvider):
             "output_tokens": response.usage.completion_tokens
         }
 
-        return text_content, tool_calls, usage, response
+        return text_content, tool_calls, token_usage, response
 
     async def generate_final_response(
         self,
