@@ -29,3 +29,7 @@ playwright>=1.43.0
 
 # (Optional) For fallback, disable in .env too if not required
 mercapi>=0.4.2
+
+# Web demo and ASGI deployment
+fastapi==0.115.12
+uvicorn[standard]==0.34.2

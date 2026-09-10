@@ -96,7 +96,7 @@ class AgentHarness:
         # Safety Guardrail Check
         is_safe, warning_msg = PromptGuardrail.validate_prompt(user_prompt)
         if not is_safe:
-            return warning_msg, [], "Guardrail", "None"
+            return warning_msg, [], "Guardrail", "None", {"total_duration_ms": 0, "total_input_tokens": 0, "total_output_tokens": 0, "total_turns": 0}
 
         # Session Memory Management
         if config.enable_session_memory and self.conversation_history:

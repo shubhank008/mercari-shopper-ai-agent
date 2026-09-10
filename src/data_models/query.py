@@ -46,6 +46,7 @@ class MercariItem(BaseModel):
     # We store currency incase Mercari Scraper returns prices in USD instead of JPY
     currency: Optional[str] = Field(default="USD", description="Listing currency (jpy, usd, etc.)")
     image_url: Optional[str] = Field(default=None, description="Primary product thumbnail image URL.")
+    image_urls: List[str] = Field(default_factory=list, description="All available product image URLs.")
     description: Optional[str] = Field(default="", description="Product description.")
     category: Optional[str] = Field(default="", description="Product category title, if available.")
     # Seller data

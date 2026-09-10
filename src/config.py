@@ -39,6 +39,7 @@ class AppConfig(BaseSettings):
     max_items_per_search: int = 25
     max_items_for_enrichment: int = 10
     max_description_length: int = 1500
+    web_session_idle_seconds: int = 1800
 
     # Default LLM Models
     # !TODO: Add these options in .env and declare them as provider-specific models instead of Primary or Fallback, this should be handled by the provider interface
