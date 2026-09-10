@@ -31,17 +31,16 @@ class ProductCard(BaseModel):
     price_jpy: Optional[float] = None
     price_usd: Optional[float] = None
     condition: str
+    seller_name: Optional[str] = None
     seller_rating_score: Optional[float] = None
     seller_total_ratings: Optional[int] = None
     num_likes: Optional[int] = None
-    source_tier: str
+    reasoning: str = "Included in the assistant's shortlisted results for this request."
 
 
 class ChatResponse(BaseModel):
-    """The final harness answer and associated recommendation metadata."""
+    """The recommendation prose, complete shortlist, and visual top picks."""
 
     recommendation: str
-    provider: str
-    search_tier: str
-    metrics: dict[str, float | int]
+    shortlist: list[ProductCard] = Field(default_factory=list)
     products: list[ProductCard] = Field(default_factory=list)

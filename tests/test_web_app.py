@@ -29,6 +29,7 @@ class FakeHarness:
                 "https://images.example/second.jpg",
             ],
             condition="Good",
+            seller_name="Trusted seller",
             seller_rating_score=4.9,
             seller_total_ratings=52,
             num_likes=8,
@@ -83,7 +84,12 @@ class WebApplicationTests(unittest.TestCase):
             "https://images.example/second.jpg",
         ])
         self.assertEqual(body["products"][0]["item_url"], "https://jp.mercari.com/item/m123")
-        self.assertEqual(body["metrics"]["total_turns"], 2)
+        self.assertEqual(body["products"][0]["seller_name"], "Trusted seller")
+        self.assertIn("reasoning", body["products"][0])
+        self.assertEqual(len(body["shortlist"]), 1)
+        self.assertNotIn("provider", body)
+        self.assertNotIn("search_tier", body)
+        self.assertNotIn("source_tier", body["products"][0])
 
     def test_new_page_session_uses_a_new_harness(self) -> None:
         """Model page reload behavior by sending an unrelated session identifier."""
@@ -103,6 +109,9 @@ class WebApplicationTests(unittest.TestCase):
         response = self.client.get("/")
         self.assertEqual(response.status_code, 200)
         self.assertIn('target="_blank" rel="noopener noreferrer"', response.text)
+        self.assertIn('id="lightbox"', response.text)
+        self.assertIn('class="product-reasoning"', response.text)
+        self.assertIn('rows="2"', response.text)
 
 
 if __name__ == "__main__":

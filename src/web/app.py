@@ -21,8 +21,8 @@ app.mount("/static", StaticFiles(directory=static_path), name="static")
 store = HarnessSessionStore(idle_seconds=config.web_session_idle_seconds)
 
 
-def product_card(item: MercariItem) -> ProductCard:
-    """Create a display card while preserving all known unique image URLs."""
+def product_card(item: MercariItem, reasoning: str) -> ProductCard:
+    """Create a display card while preserving trusted listing and reasoning data."""
     image_urls = list(dict.fromkeys(url for url in [*item.image_urls, item.image_url] if url))
     return ProductCard(
         item_id=item.item_id,
@@ -32,10 +32,11 @@ def product_card(item: MercariItem) -> ProductCard:
         price_jpy=item.price_jpy,
         price_usd=item.price_usd,
         condition=item.condition,
+        seller_name=item.seller_name,
         seller_rating_score=item.seller_rating_score,
         seller_total_ratings=item.seller_total_ratings,
         num_likes=item.num_likes,
-        source_tier=item.source_tier,
+        reasoning=reasoning,
     )
 
 
@@ -71,10 +72,14 @@ async def chat(payload: ChatRequest) -> ChatResponse:
         )
 
     logger.info("[WEB_CHAT_COMPLETED] recommendation returned")
+    enriched_ids = getattr(harness, "enriched_item_ids", set())
+    enriched = [item for item in items if item.item_id in enriched_ids]
+    remaining = [item for item in items if item.item_id not in enriched_ids]
+    ordered_items = enriched + remaining
+    shortlist = [product_card(item, recommendation) for item in ordered_items]
+    logger.info("[WEB_RECOMMENDATION_RENDERED] shortlist=%d top_picks=%d", len(shortlist), min(3, len(shortlist)))
     return ChatResponse(
         recommendation=recommendation,
-        provider=provider,
-        search_tier=tier,
-        metrics=metrics,
-        products=[product_card(item) for item in items[:3]],
+        shortlist=shortlist,
+        products=shortlist[:3],
     )
