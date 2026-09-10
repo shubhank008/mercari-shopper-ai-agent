@@ -19,3 +19,11 @@
 - [x] Implement comparison table, reasoning, labels, and image lightbox.
 - [x] Add regression tests and visual validation.
 - [ ] Commit and publish the refinement.
+
+## 004: Recommendation prose and image layout fix
+
+- [x] Specify prose partitioning and natural image sizing.
+- [x] Add structured recommendation parsing and API fields.
+- [x] Render per-pick reasoning and final conclusion once.
+- [x] Add regression tests and live visual validation.
+- [ ] Commit and publish the fix.
