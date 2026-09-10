@@ -49,15 +49,19 @@ h1 { max-width: 680px; margin: 0; font: 600 clamp(2.8rem, 7vw, 5.6rem)/.96 "Frau
 .table-price { color: var(--accent); font-weight: 700; }
 .comparison-scroll a { color: var(--accent); text-decoration: none; }
 .product-grid { display: grid; gap: 14px; margin-top: 18px; }
-.product-card { overflow: hidden; display: grid; grid-template-columns: minmax(160px, 240px) 1fr; border: 1px solid var(--line); border-radius: 14px; background: #fffefa; }
-.image-track { min-height: 200px; display: flex; overflow-x: auto; scroll-snap-type: x mandatory; background: #ece9e0; }
-.image-track img, .image-placeholder { flex: 0 0 100%; width: 100%; object-fit: cover; scroll-snap-align: start; }
+.product-card { overflow: hidden; display: grid; grid-template-columns: minmax(160px, 240px) 1fr; align-items: start; border: 1px solid var(--line); border-radius: 14px; background: #fffefa; }
+.image-track { align-self: start; display: flex; overflow-x: auto; scroll-snap-type: x mandatory; background: #ece9e0; }
+.image-track img, .image-placeholder { flex: 0 0 100%; width: 100%; height: auto; max-height: 320px; object-fit: contain; scroll-snap-align: start; }
 .image-track img { cursor: zoom-in; }
 .image-placeholder { display: grid; place-items: center; color: var(--muted); font: .68rem "DM Mono", monospace; }
 .product-copy { padding: 18px; }
 .product-copy h3 { margin: 0; font: 600 1.08rem/1.35 "Fraunces", serif; }
 .product-kicker { margin: 10px 0 0; color: var(--accent); font: 700 1.8rem/1 "DM Mono", monospace; letter-spacing: -.06em; }
+.recommendation-pick { display: grid; gap: 8px; }
+.pick-heading { margin: 18px 0 0; font: 600 1.15rem/1.2 "Fraunces", serif; }
 .product-reasoning { margin: 13px 0; color: #47534d; font-size: .78rem; line-height: 1.55; }
+.recommendation-conclusion { margin-top: 28px; padding: 20px; border-left: 3px solid var(--accent); background: #f0eee7; }
+.recommendation-conclusion p:last-child { margin: 0; color: #35433c; line-height: 1.7; }
 .product-meta { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0 16px; }
 .product-meta span { padding: 6px 8px; border: 1px solid #e2dfd4; border-radius: 999px; color: #47534d; font-size: .7rem; }
 .mercari-link { color: var(--accent); font: 600 .75rem "DM Mono", monospace; text-decoration: none; }

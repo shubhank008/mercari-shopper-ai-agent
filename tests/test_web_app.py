@@ -1,6 +1,7 @@
 """Behavior tests for the browser API adapter and presentation contract."""
 
 import unittest
+from pathlib import Path
 
 from fastapi.testclient import TestClient
 
@@ -90,6 +91,9 @@ class WebApplicationTests(unittest.TestCase):
         self.assertNotIn("provider", body)
         self.assertNotIn("search_tier", body)
         self.assertNotIn("source_tier", body["products"][0])
+        self.assertFalse(body["recommendation_parsed"])
+        self.assertEqual(body["recommendation_sections"], [])
+        self.assertEqual(body["recommendation_conclusion"], "This is the best match.")
 
     def test_new_page_session_uses_a_new_harness(self) -> None:
         """Model page reload behavior by sending an unrelated session identifier."""
@@ -112,6 +116,11 @@ class WebApplicationTests(unittest.TestCase):
         self.assertIn('id="lightbox"', response.text)
         self.assertIn('class="product-reasoning"', response.text)
         self.assertIn('rows="2"', response.text)
+        javascript = (Path(__file__).parent.parent / "src/web/static/app.js").read_text()
+        styles = (Path(__file__).parent.parent / "src/web/static/styles.css").read_text()
+        self.assertIn('className = "recommendation-conclusion"', javascript)
+        self.assertIn('className = "pick-heading"', javascript)
+        self.assertIn('height: auto', styles)
 
 
 if __name__ == "__main__":
