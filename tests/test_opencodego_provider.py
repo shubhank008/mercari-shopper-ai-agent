@@ -70,6 +70,44 @@ class OpenCodeGoProviderTests(unittest.TestCase):
         self.assertEqual(client.completions.kwargs["tools"][0]["type"], "function")
         self.assertEqual(client.completions.kwargs["timeout"], 15.0)
 
+    def test_multi_turn_anthropic_blocks_are_normalized_for_openai_api(self) -> None:
+        """Serialize assistant tool calls and tool results as OpenAI messages."""
+        client = RecordingClient()
+        messages = [
+            {"role": "user", "content": "Find an iPhone 16."},
+            {
+                "role": "assistant",
+                "content": [
+                    {"type": "text", "text": "I will search."},
+                    {"type": "tool_use", "id": "call_1", "name": "search_mercari", "input": {"keyword": "iPhone 16"}},
+                    {"type": "tool_use", "id": "call_2", "name": "search_mercari", "input": {"keyword": "iPhone16 本体"}},
+                ],
+            },
+            {
+                "role": "user",
+                "content": [
+                    {"type": "tool_result", "tool_use_id": "call_1", "content": "first results"},
+                    {"type": "tool_result", "tool_use_id": "call_2", "content": "second results"},
+                ],
+            },
+        ]
+        with patch("src.llm_providers.opencodego_provider.config") as provider_config:
+            provider_config.opencodego_api_key = "test-key"
+            provider_config.opencodego_model_id = "glm-5.2"
+            provider_config.opencodego_base_url = "https://opencode.ai/zen/go/v1"
+            provider_config.llm_timeout_seconds = 15.0
+            provider = OpenCodeGoProvider(client=client)
+            asyncio.run(provider.generate_tool_call(messages, [], "You are a shopper."))
+
+        sent = client.completions.kwargs["messages"]
+        self.assertEqual(sent[2]["role"], "assistant")
+        self.assertEqual(sent[2]["content"], "I will search.")
+        self.assertEqual(len(sent[2]["tool_calls"]), 2)
+        self.assertEqual(sent[2]["tool_calls"][0]["function"]["name"], "search_mercari")
+        self.assertEqual(sent[3], {"role": "tool", "tool_call_id": "call_1", "content": "first results"})
+        self.assertEqual(sent[4], {"role": "tool", "tool_call_id": "call_2", "content": "second results"})
+
+
     def test_invalid_primary_provider_is_rejected(self) -> None:
         """Fail fast when a deployment selects an unsupported provider name."""
         with self.assertRaises(ValidationError):

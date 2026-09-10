@@ -7,7 +7,7 @@ import json
 import logging
 from typing import List, Dict, Any, Tuple
 from openai import AsyncOpenAI
-from src.llm_providers.base import BaseLLMProvider
+from src.llm_providers.base import BaseLLMProvider, normalize_openai_messages
 from src.config import config
 
 logger = logging.getLogger(__name__)
@@ -48,8 +48,7 @@ class OpenAIProvider(BaseLLMProvider):
     ) -> Tuple[str, List[Dict[str, Any]], Dict[str, int], Any]:
         logger.info(f"[{self.provider_name}] Generating completion with tool definitions...")
 
-        # Format messages including system prompt for OpenAI
-        formatted_messages = [{"role": "system", "content": system_prompt}] + messages
+        formatted_messages = normalize_openai_messages(messages, system_prompt)
         openai_tools = self._convert_tools_to_openai_format(tools)
 
         response = await self.client.chat.completions.create(
@@ -89,7 +88,7 @@ class OpenAIProvider(BaseLLMProvider):
     ) -> str:
         logger.info(f"[{self.provider_name}] Generating final recommendation text...")
 
-        formatted_messages = [{"role": "system", "content": system_prompt}] + messages
+        formatted_messages = normalize_openai_messages(messages, system_prompt)
 
         response = await self.client.chat.completions.create(
             model=self.model,

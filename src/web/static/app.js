@@ -125,6 +125,12 @@ form.addEventListener("submit", async (event) => {
   await submitMessage(message);
 });
 
+input.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter" || event.shiftKey) return;
+  event.preventDefault();
+  form.requestSubmit();
+});
+
 document.querySelectorAll("[data-prompt]").forEach((button) => {
   button.addEventListener("click", () => {
     input.value = button.dataset.prompt;
