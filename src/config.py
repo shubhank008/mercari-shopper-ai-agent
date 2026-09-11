@@ -4,7 +4,7 @@ Centralizes environment variable loading, default thresholds, and feature flags.
 """
 
 from typing import Literal, Optional
-from pydantic import model_validator
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -48,6 +48,12 @@ class AppConfig(BaseSettings):
     max_items_for_enrichment: int = 10
     max_description_length: int = 1500
     web_session_idle_seconds: int = 1800
+
+    @field_validator("llm_primary_provider", mode="before")
+    @classmethod
+    def normalize_provider_alias(cls, value: str) -> str:
+        """Accept the historical `opencode` spelling as OpenCode Go."""
+        return "opencodego" if value == "opencode" else value
 
     @model_validator(mode="after")
     def validate_rules(self) -> "AppConfig":

@@ -114,9 +114,17 @@ function renderComparison(shortlist) {
   return section;
 }
 
-/** Add reasoning, full comparison, and final top-three recommendation cards. */
+/** Add the parsed recommendation narrative, comparison, cards, and conclusion once. */
 function addRecommendation(response) {
-  const message = addMessage("assistant", response.recommendation, "Mercari Scout");
+  const message = document.createElement("article");
+  message.className = "message assistant";
+  message.innerHTML = '<p class="message-label">Mercari Scout</p>';
+  const intro = response.recommendation_intro || (!response.recommendation_parsed ? response.recommendation : "");
+  if (intro) {
+    const introText = document.createElement("p");
+    introText.textContent = intro;
+    message.append(introText);
+  }
   const shortlist = response.shortlist || response.products || [];
   if (shortlist.length) message.append(renderComparison(shortlist));
   const finalHeading = document.createElement("div");
@@ -125,8 +133,33 @@ function addRecommendation(response) {
   message.append(finalHeading);
   const grid = document.createElement("div");
   grid.className = "product-grid";
-  response.products.forEach((product) => grid.append(renderProduct(product)));
+  response.products.forEach((product, index) => {
+    const wrapper = document.createElement("section");
+    wrapper.className = "recommendation-pick";
+    const section = (response.recommendation_sections || [])[index];
+    if (section) {
+      const heading = document.createElement("h3");
+      heading.className = "pick-heading";
+      heading.textContent = `Recommendation ${section.rank}: ${section.title}`;
+      wrapper.append(heading);
+    }
+    wrapper.append(renderProduct(product));
+    grid.append(wrapper);
+  });
   message.append(grid);
+  if (response.recommendation_conclusion) {
+    const conclusion = document.createElement("div");
+    conclusion.className = "recommendation-conclusion";
+    const label = document.createElement("p");
+    label.className = "eyebrow";
+    label.textContent = "Final tip";
+    const text = document.createElement("p");
+    text.textContent = response.recommendation_conclusion;
+    conclusion.append(label, text);
+    message.append(conclusion);
+  }
+  messages.append(message);
+  message.scrollIntoView({ behavior: "smooth", block: "end" });
 }
 
 /** Submit a request and keep the composer available after every outcome. */

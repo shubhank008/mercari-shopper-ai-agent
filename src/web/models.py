@@ -21,6 +21,14 @@ class ChatRequest(BaseModel):
         return value
 
 
+class RecommendationSection(BaseModel):
+    """A ranked recommendation narrative extracted from the assistant response."""
+
+    rank: int
+    title: str
+    reasoning: str
+
+
 class ProductCard(BaseModel):
     """Safe presentation data derived from a trusted Mercari listing."""
 
@@ -42,5 +50,9 @@ class ChatResponse(BaseModel):
     """The recommendation prose, complete shortlist, and visual top picks."""
 
     recommendation: str
+    recommendation_intro: str = ""
+    recommendation_sections: list[RecommendationSection] = Field(default_factory=list)
+    recommendation_conclusion: str = ""
+    recommendation_parsed: bool = False
     shortlist: list[ProductCard] = Field(default_factory=list)
     products: list[ProductCard] = Field(default_factory=list)

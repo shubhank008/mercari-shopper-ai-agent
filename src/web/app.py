@@ -10,7 +10,8 @@ from pydantic import ValidationError
 
 from src.config import config
 from src.data_models.query import MercariItem
-from src.web.models import ChatRequest, ChatResponse, ProductCard
+from src.web.models import ChatRequest, ChatResponse, ProductCard, RecommendationSection
+from src.web.recommendation_parser import parse_recommendation
 from src.web.session_store import HarnessSessionStore
 
 logger = logging.getLogger(__name__)
@@ -21,7 +22,7 @@ app.mount("/static", StaticFiles(directory=static_path), name="static")
 store = HarnessSessionStore(idle_seconds=config.web_session_idle_seconds)
 
 
-def product_card(item: MercariItem, reasoning: str) -> ProductCard:
+def product_card(item: MercariItem, reasoning: str = "") -> ProductCard:
     """Create a display card while preserving trusted listing and reasoning data."""
     image_urls = list(dict.fromkeys(url for url in [*item.image_urls, item.image_url] if url))
     return ProductCard(
@@ -72,14 +73,29 @@ async def chat(payload: ChatRequest) -> ChatResponse:
         )
 
     logger.info("[WEB_CHAT_COMPLETED] recommendation returned")
+    parsed = parse_recommendation(recommendation)
+    if parsed.parsed:
+        logger.info("[WEB_RECOMMENDATION_PARSED] sections=%d", len(parsed.sections))
+    else:
+        logger.info("[WEB_RECOMMENDATION_PARSE_FALLBACK]")
     enriched_ids = getattr(harness, "enriched_item_ids", set())
     enriched = [item for item in items if item.item_id in enriched_ids]
     remaining = [item for item in items if item.item_id not in enriched_ids]
     ordered_items = enriched + remaining
-    shortlist = [product_card(item, recommendation) for item in ordered_items]
-    logger.info("[WEB_RECOMMENDATION_RENDERED] shortlist=%d top_picks=%d", len(shortlist), min(3, len(shortlist)))
+    sections = [RecommendationSection.model_validate(section.__dict__) for section in parsed.sections]
+    shortlist = [product_card(item) for item in ordered_items]
+    products = []
+    for index, item in enumerate(ordered_items[:3]):
+        section = next((candidate for candidate in parsed.sections if candidate.rank == index + 1), None)
+        reasoning = section.reasoning if section and section.reasoning else "Selected from the assistant's final shortlist."
+        products.append(product_card(item, reasoning))
+    logger.info("[WEB_RECOMMENDATION_RENDERED] shortlist=%d top_picks=%d", len(shortlist), len(products))
     return ChatResponse(
         recommendation=recommendation,
+        recommendation_intro=parsed.intro,
+        recommendation_sections=sections,
+        recommendation_conclusion=parsed.conclusion,
+        recommendation_parsed=parsed.parsed,
         shortlist=shortlist,
-        products=shortlist[:3],
+        products=products,
     )
