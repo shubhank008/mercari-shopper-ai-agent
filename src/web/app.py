@@ -89,8 +89,14 @@ async def chat(payload: ChatRequest) -> ChatResponse:
         )
 
     logger.info("[WEB_CHAT_COMPLETED] recommendation returned")
-    parsed = parse_recommendation(recommendation)
-    if parsed.parsed:
+    structured = getattr(harness, "structured_recommendation", None)
+    parsed = parse_recommendation(recommendation) if structured is None else None
+    if structured is not None:
+        logger.info("[WEB_RECOMMENDATION_STRUCTURED] picks=%d", len(structured.picks))
+        for pick in structured.picks:
+            logger.info("[WEB_RECOMMENDATION_REASONING] rank=%d item_id=%s reasoning=%s", pick.rank, pick.item_id, pick.reasoning)
+        logger.info("[WEB_RECOMMENDATION_CONCLUSION] conclusion=%s", structured.conclusion)
+    elif parsed.parsed:
         logger.info("[WEB_RECOMMENDATION_PARSED] sections=%d", len(parsed.sections))
     else:
         logger.info("[WEB_RECOMMENDATION_PARSE_FALLBACK]")
@@ -100,26 +106,36 @@ async def chat(payload: ChatRequest) -> ChatResponse:
     ordered_items = enriched + remaining
     shortlist = [product_card(item) for item in ordered_items]
     products = []
-    sections = [RecommendationSection.model_validate(section.__dict__) for section in parsed.sections]
-    for index, item in enumerate(ordered_items[:3]):
-        section = next((candidate for candidate in parsed.sections if candidate.rank == index + 1), None)
-        if section and section.reasoning:
-            title = section.title
-            reasoning = section.reasoning
-        else:
-            title = f"Shortlisted match {index + 1}"
-            reasoning = _fallback_reasoning(item)
-        if not section:
-            sections.append(RecommendationSection(rank=index + 1, title=title, reasoning=reasoning))
-        products.append(product_card(item, reasoning))
-    conclusion = parsed.conclusion or _fallback_conclusion(products)
+    if structured is not None:
+        sections = [RecommendationSection(rank=pick.rank, title=pick.title, reasoning=pick.reasoning) for pick in structured.picks]
+        item_by_id = {item.item_id: item for item in ordered_items}
+        for pick in sorted(structured.picks, key=lambda value: value.rank):
+            item = item_by_id.get(pick.item_id)
+            if item is not None:
+                products.append(product_card(item, pick.reasoning))
+        if len(products) != 3:
+            raise HTTPException(status_code=502, detail="The assistant returned recommendations for unavailable listings. Please try again.")
+        conclusion = structured.conclusion
+        intro = structured.intro
+        parsed_flag = True
+    else:
+        sections = [RecommendationSection.model_validate(section.__dict__) for section in parsed.sections]
+        for index, item in enumerate(ordered_items[:3]):
+            section = next((candidate for candidate in parsed.sections if candidate.rank == index + 1), None)
+            reasoning = section.reasoning if section and section.reasoning else _fallback_reasoning(item)
+            if not section:
+                sections.append(RecommendationSection(rank=index + 1, title=f"Shortlisted match {index + 1}", reasoning=reasoning))
+            products.append(product_card(item, reasoning))
+        conclusion = parsed.conclusion or _fallback_conclusion(products)
+        intro = parsed.intro or "I compared the available listings and selected the strongest matches for your request."
+        parsed_flag = parsed.parsed
     logger.info("[WEB_RECOMMENDATION_RENDERED] shortlist=%d top_picks=%d", len(shortlist), len(products))
     return ChatResponse(
         recommendation=recommendation,
-        recommendation_intro=parsed.intro or "I compared the available listings and selected the strongest matches for your request.",
+        recommendation_intro=intro,
         recommendation_sections=sections,
         recommendation_conclusion=conclusion,
-        recommendation_parsed=parsed.parsed,
+        recommendation_parsed=parsed_flag,
         shortlist=shortlist,
         products=products,
     )

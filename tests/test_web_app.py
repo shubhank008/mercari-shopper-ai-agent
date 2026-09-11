@@ -6,6 +6,7 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 
 from src.data_models.query import MercariItem
+from src.data_models.recommendation import RecommendationPick, StructuredRecommendation
 from src.web import app as web_app
 
 
@@ -42,6 +43,34 @@ class FakeHarness:
             "total_output_tokens": 20,
             "total_turns": 2,
         }
+
+class StructuredFakeHarness(FakeHarness):
+    """Exposes validated structured reasoning for the API contract test."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.structured_recommendation = StructuredRecommendation(
+            intro="I compared the listings.",
+            picks=[
+                RecommendationPick(rank=1, item_id="m123", title="Best value", reasoning="Best value because of condition."),
+                RecommendationPick(rank=2, item_id="m124", title="Best seller", reasoning="Best seller history."),
+                RecommendationPick(rank=3, item_id="m125", title="Lowest price", reasoning="Lowest price within the target."),
+            ],
+            conclusion="Choose the first after checking the listing.",
+        )
+
+    async def run(self, message: str):
+        """Return three listings matching the structured recommendation IDs."""
+        base = await super().run(message)
+        first = base[1][0]
+        items = [
+            first,
+            first.model_copy(update={"item_id": "m124", "title": "Trusted seller listing", "item_url": "https://jp.mercari.com/item/m124"}),
+            first.model_copy(update={"item_id": "m125", "title": "Lowest price listing", "item_url": "https://jp.mercari.com/item/m125"}),
+        ]
+        return base[0], items, base[2], base[3], base[4]
+
+
 
 
 class FakeStore:
@@ -109,6 +138,23 @@ class WebApplicationTests(unittest.TestCase):
         response = self.client.post("/api/chat", json={"session_id": "new-page", "message": "   "})
         self.assertEqual(response.status_code, 422)
         self.assertEqual(self.store.sessions, {})
+
+    def test_structured_recommendation_preserves_exact_reasoning_and_conclusion(self) -> None:
+        """Verify structured provider fields are available without prose parsing."""
+        original_store = web_app.store
+        store = FakeStore()
+        structured = StructuredFakeHarness()
+        store.sessions["structured"] = structured
+        web_app.store = store
+        try:
+            response = self.client.post("/api/chat", json={"session_id": "structured", "message": "Find a watch"})
+        finally:
+            web_app.store = original_store
+        body = response.json()
+        self.assertEqual(body["recommendation_intro"], "I compared the listings.")
+        self.assertEqual(body["recommendation_conclusion"], "Choose the first after checking the listing.")
+        self.assertEqual(body["products"][0]["reasoning"], "Best value because of condition.")
+
 
     def test_html_declares_safe_external_mercari_link_contract(self) -> None:
         """Serve the browser page with a safe link template for recommendation cards."""
