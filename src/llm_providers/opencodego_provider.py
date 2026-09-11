@@ -64,7 +64,11 @@ class OpenCodeGoProvider(BaseLLMProvider):
             model=self.model,
             messages=normalize_openai_messages(messages, system_prompt),
             tools=self._convert_tools_to_openai_format(tools),
-            tool_choice="auto",
+            tool_choice=(
+                {"type": "function", "function": {"name": "final_recommendation"}}
+                if len(tools) == 1 and tools[0]["name"] == "final_recommendation"
+                else "auto"
+            ),
             max_tokens=2048,
             timeout=config.llm_timeout_seconds,
         )

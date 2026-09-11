@@ -27,3 +27,11 @@
 - [x] Render per-pick reasoning and final conclusion once.
 - [x] Add regression tests and live visual validation.
 - [ ] Commit and publish the fix.
+
+## 005: Fixed structured recommendation synthesis
+
+- [x] Reproduce CLI and web output differences.
+- [x] Add Pydantic-validated final recommendation contract.
+- [x] Log per-pick reasoning and final conclusion safely.
+- [x] Add deterministic API/model regressions.
+- [x] Run live query; provider declined final tool in this environment, JSON fallback remains validated.

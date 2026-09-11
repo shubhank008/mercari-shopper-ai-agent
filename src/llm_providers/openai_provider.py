@@ -55,7 +55,11 @@ class OpenAIProvider(BaseLLMProvider):
             model=self.model,
             messages=formatted_messages,
             tools=openai_tools,
-            tool_choice="auto",
+            tool_choice=(
+                {"type": "function", "function": {"name": "final_recommendation"}}
+                if len(openai_tools) == 1 and openai_tools[0]["function"]["name"] == "final_recommendation"
+                else "auto"
+            ),
             max_tokens=2048,
             timeout=config.llm_timeout_seconds
         )

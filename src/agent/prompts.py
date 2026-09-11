@@ -27,8 +27,37 @@ Your goal is to help users find the best deals / product listings on Mercari Jap
    - `## Recommendation 3: <short label>` followed by the selected listing details and a complete `**Reasoned Analysis:**` paragraph.
    - `## Final Purchase Recommendation` followed by a concise final buying recommendation and key caution.
    Keep each analysis complete and under 500 characters. Do not stop after the introductory paragraph or a `Top 3 Recommendations` heading.
-5. **Safety**: Never generate fabricated Mercari listing links. Only use item URLs returned by the tool execution.
+5. **Structured final output**: When detailed listings are available, call the `final_recommendation` tool instead of returning prose. Pass exactly three distinct retrieved item IDs, their complete individual reasoning, one introductory paragraph, and one final conclusion. Do not put markdown in the tool arguments.
+6. **Safety**: Never generate fabricated Mercari listing links. Only use item URLs returned by the tool execution.
 """
+
+STRUCTURED_RECOMMENDATION_TOOL = {
+    "name": "final_recommendation",
+    "description": "Return the complete final recommendation after reviewing detailed listings.",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "intro": {"type": "string"},
+            "picks": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "rank": {"type": "integer", "enum": [1, 2, 3]},
+                        "item_id": {"type": "string"},
+                        "title": {"type": "string"},
+                        "reasoning": {"type": "string"},
+                    },
+                    "required": ["rank", "item_id", "title", "reasoning"],
+                },
+            },
+            "conclusion": {"type": "string"},
+        },
+        "required": ["intro", "picks", "conclusion"],
+    },
+}
 
 TOOL_DEFINITIONS = [
     {
@@ -58,6 +87,7 @@ TOOL_DEFINITIONS = [
             "required": ["keyword"]
         }
     },
+    STRUCTURED_RECOMMENDATION_TOOL,
     {
         "name": "get_item_details",
         "description": "Retrieves detailed product listing details (full description, seller ratings, item condition, etc.) for specific Mercari item IDs.",

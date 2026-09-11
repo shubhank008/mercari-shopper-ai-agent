@@ -10,8 +10,9 @@ from typing import List, Dict, Any, Tuple
 from src.llm_providers.llm_manager import LLMFallbackManager
 from src.backends.mercari.mercari_search import MercariSearchManager
 from src.guardrails.safety import PromptGuardrail, ContextSanitizer
-from src.agent.prompts import SYSTEM_PROMPT, TOOL_DEFINITIONS
+from src.agent.prompts import SYSTEM_PROMPT, STRUCTURED_RECOMMENDATION_TOOL, TOOL_DEFINITIONS
 from src.data_models.query import MercariItem, AgentState
+from src.data_models.recommendation import StructuredRecommendation
 from src.config import config
 
 logger = logging.getLogger(__name__)
@@ -38,6 +39,7 @@ class AgentHarness:
         # search_mercari fetches us partial data, which we hydrate with detailed data from get_item_data
         self.session_items_map: Dict[str, MercariItem] = {}
         self.enriched_item_ids: set[str] = set()
+        self.structured_recommendation: StructuredRecommendation | None = None
 
         init_duration_ms = round((time.perf_counter() - self.start_time) * 1000, 2)
         logger.info(f"Agent Harness Initialization Completed in {init_duration_ms}ms")
@@ -47,7 +49,22 @@ class AgentHarness:
         self.conversation_history = []
         self.session_items_map = {}
         self.enriched_item_ids = set()
+        self.structured_recommendation = None
         logger.info("Session conversation memory reset.")
+
+    def _render_structured_recommendation(self) -> str:
+        """Render the validated final recommendation for the existing CLI surface."""
+        if self.structured_recommendation is None:
+            return ""
+        lines = [self.structured_recommendation.intro]
+        for pick in sorted(self.structured_recommendation.picks, key=lambda value: value.rank):
+            lines.extend([
+                "",
+                f"## Recommendation {pick.rank}: {pick.title}",
+                f"**Reasoned Analysis:** {pick.reasoning}",
+            ])
+        lines.extend(["", "## Final Purchase Recommendation", self.structured_recommendation.conclusion])
+        return "\n".join(lines)
 
     async def _execute_search_tool(self, **kwargs) -> Tuple[List[MercariItem], str]:
         """Tool execution handler for Mercari product searching."""
@@ -81,8 +98,31 @@ class AgentHarness:
             details = await self.search_manager.get_item_details(item_id)
             if details:
                 detailed_items.append(details)
-
         return detailed_items, "ItemDetails Scraper"
+
+    async def _request_structured_recommendation(self, messages: List[Dict[str, Any]]) -> None:
+        """Request and validate a structured final recommendation after retrieval."""
+        text, tool_calls, _, _, _ = await self.llm_manager.generate_tool_call(
+            messages=messages,
+            tools=[STRUCTURED_RECOMMENDATION_TOOL],
+            system_prompt=SYSTEM_PROMPT + "\\nReturn only valid JSON matching the final_recommendation schema if the tool cannot be called.",
+        )
+        for tool_call in tool_calls:
+            if tool_call["name"] == "final_recommendation":
+                structured = StructuredRecommendation.model_validate(tool_call["arguments"])
+                missing_ids = [pick.item_id for pick in structured.picks if pick.item_id not in self.session_items_map]
+                if missing_ids:
+                    raise ValueError(f"Structured recommendation contains unknown item IDs: {missing_ids}")
+                self.structured_recommendation = structured
+                return
+        if text.strip():
+            structured = StructuredRecommendation.model_validate_json(text)
+            missing_ids = [pick.item_id for pick in structured.picks if pick.item_id not in self.session_items_map]
+            if missing_ids:
+                raise ValueError(f"Structured JSON recommendation contains unknown item IDs: {missing_ids}")
+            self.structured_recommendation = structured
+            return
+        raise ValueError("Structured recommendation tool call was not returned by the provider.")
     
 
     ############################
@@ -136,7 +176,6 @@ class AgentHarness:
             )
             llm_turn_ms = round((time.perf_counter() - turn_llm_start) * 1000, 2)
             active_provider = provider
-
             # Accumulate Token Usage
             in_tok = token_usage.get("input_tokens", 0)
             out_tok = token_usage.get("output_tokens", 0)
@@ -153,7 +192,9 @@ class AgentHarness:
             # -------------------------------------------------------------
             if not tool_calls:
                 logger.info(f"{provider} returned text without requesting tool calls. State loop completed, RETURNING RESULTS.")
-                if not text_content.strip() and self.session_items_map:
+                if self.structured_recommendation is not None:
+                    text_content = self._render_structured_recommendation()
+                elif not text_content.strip() and self.session_items_map:
                     try:
                         text_content, active_provider = await self.llm_manager.generate_final_response(
                             messages=messages,
@@ -201,6 +242,7 @@ class AgentHarness:
 
             # MAJOR - Execute Requested Tools and Build Tool Result Message Turn
             tool_results_content = []
+            detailed_retrieval_requested = False
             # Process All Tool Call Requests
             for tool_call in tool_calls:
                 tool_name = tool_call["name"]
@@ -213,7 +255,14 @@ class AgentHarness:
                 # and to gracefully handle it and show message on user side
                 try:
                     # Make sure tool is registered in our registry
-                    if tool_name == "search_mercari":
+                    if tool_name == "final_recommendation":
+                        structured = StructuredRecommendation.model_validate(tool_args)
+                        missing_ids = [pick.item_id for pick in structured.picks if pick.item_id not in self.session_items_map]
+                        if missing_ids:
+                            raise ValueError(f"Recommendation contains unknown item IDs: {missing_ids}")
+                        self.structured_recommendation = structured
+                        result_payload = json.dumps({"status": "final recommendation accepted"})
+                    elif tool_name == "search_mercari":
                         ## Actual Tool Calling
                         items, tier_used = await self.tool_registry[tool_name](**tool_args)
                         active_tier = tier_used
@@ -230,6 +279,7 @@ class AgentHarness:
                         )
                         result_payload = json.dumps(sanitized_dicts, ensure_ascii=False)
                     elif tool_name == "get_item_details":
+                        detailed_retrieval_requested = True
                         ## Actual Tool Calling
                         detailed_items, tier_used = await self.tool_registry[tool_name](**tool_args)
                         active_tier = tier_used
@@ -272,6 +322,11 @@ class AgentHarness:
             # This way we append success or failure of one or multiple tools into the context
             # So next step-turn LLM can decide if it achieved desired results or need to self-correct and run another turn
             messages.append({"role": "user", "content": tool_results_content})
+            if detailed_retrieval_requested and self.structured_recommendation is None:
+                try:
+                    await self._request_structured_recommendation(messages)
+                except Exception as exc:
+                    logger.warning("Structured recommendation request failed: %s", exc)
 
             # CRITICAL: NO RETURN HERE!
             # The multi-step loop iterates to Turn 2. The LLM receives updated `messages` with tool_call results appended
