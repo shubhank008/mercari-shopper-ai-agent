@@ -41,6 +41,22 @@ def product_card(item: MercariItem, reasoning: str = "") -> ProductCard:
     )
 
 
+def _fallback_reasoning(item: MercariItem) -> str:
+    """Explain a fallback pick using only factual listing fields."""
+    price = f"¥{item.price_jpy:,.0f}" if item.price_jpy is not None else "an unavailable price"
+    condition = item.condition or "an unavailable condition"
+    seller = item.seller_rating_score
+    seller_text = f" Seller rating is {seller}/5." if seller is not None else " Seller rating is not available."
+    return f"This listing is included for comparison at {price} in {condition} condition.{seller_text} Review the full listing before purchase."
+
+
+def _fallback_conclusion(products: list[ProductCard]) -> str:
+    """Provide a useful final tip when the model omits a conclusion."""
+    if not products:
+        return "No final purchase recommendation was generated. Review the shortlist and try again."
+    return "Compare the top picks against your budget and condition requirements, then verify the listing details, seller history, and item availability before buying."
+
+
 @app.get("/", include_in_schema=False)
 async def index() -> FileResponse:
     """Serve the single-page chat interface."""
@@ -82,19 +98,27 @@ async def chat(payload: ChatRequest) -> ChatResponse:
     enriched = [item for item in items if item.item_id in enriched_ids]
     remaining = [item for item in items if item.item_id not in enriched_ids]
     ordered_items = enriched + remaining
-    sections = [RecommendationSection.model_validate(section.__dict__) for section in parsed.sections]
     shortlist = [product_card(item) for item in ordered_items]
     products = []
+    sections = [RecommendationSection.model_validate(section.__dict__) for section in parsed.sections]
     for index, item in enumerate(ordered_items[:3]):
         section = next((candidate for candidate in parsed.sections if candidate.rank == index + 1), None)
-        reasoning = section.reasoning if section and section.reasoning else "Selected from the assistant's final shortlist."
+        if section and section.reasoning:
+            title = section.title
+            reasoning = section.reasoning
+        else:
+            title = f"Shortlisted match {index + 1}"
+            reasoning = _fallback_reasoning(item)
+        if not section:
+            sections.append(RecommendationSection(rank=index + 1, title=title, reasoning=reasoning))
         products.append(product_card(item, reasoning))
+    conclusion = parsed.conclusion or _fallback_conclusion(products)
     logger.info("[WEB_RECOMMENDATION_RENDERED] shortlist=%d top_picks=%d", len(shortlist), len(products))
     return ChatResponse(
         recommendation=recommendation,
-        recommendation_intro=parsed.intro,
+        recommendation_intro=parsed.intro or "I compared the available listings and selected the strongest matches for your request.",
         recommendation_sections=sections,
-        recommendation_conclusion=parsed.conclusion,
+        recommendation_conclusion=conclusion,
         recommendation_parsed=parsed.parsed,
         shortlist=shortlist,
         products=products,
