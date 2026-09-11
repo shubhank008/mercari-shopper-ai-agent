@@ -92,8 +92,10 @@ class WebApplicationTests(unittest.TestCase):
         self.assertNotIn("search_tier", body)
         self.assertNotIn("source_tier", body["products"][0])
         self.assertFalse(body["recommendation_parsed"])
-        self.assertEqual(body["recommendation_sections"], [])
+        self.assertEqual(len(body["recommendation_sections"]), 1)
+        self.assertEqual(body["recommendation_sections"][0]["title"], "Shortlisted match 1")
         self.assertEqual(body["recommendation_conclusion"], "This is the best match.")
+        self.assertTrue(body["products"][0]["reasoning"])
 
     def test_new_page_session_uses_a_new_harness(self) -> None:
         """Model page reload behavior by sending an unrelated session identifier."""

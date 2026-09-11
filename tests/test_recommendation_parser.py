@@ -37,6 +37,13 @@ class RecommendationParserTests(unittest.TestCase):
         self.assertEqual([section.rank for section in parsed.sections], [1, 2, 3])
         self.assertEqual(parsed.sections[1].title, "Best battery")
 
+    def test_inline_final_tip_is_preserved(self) -> None:
+        """Keep a one-line final tip outside the last product reasoning block."""
+        parsed = parse_recommendation("""### 1. Best value\n**Reasoned Analysis:** A good choice.\n\n### 2. Best battery\n**Reasoned Analysis:** Strong battery.\n\n### 3. Lowest price\n**Reasoned Analysis:** Lowest cost.\n\nFinal tip: verify condition before buying.""")
+        self.assertTrue(parsed.parsed)
+        self.assertEqual(parsed.conclusion, "verify condition before buying.")
+        self.assertEqual(parsed.sections[-1].reasoning, "Lowest cost.")
+
     def test_unstructured_text_uses_single_fallback(self) -> None:
         """Keep unexpected prose intact without duplicating it into cards."""
         parsed = parse_recommendation("A short recommendation without ranked headings.")

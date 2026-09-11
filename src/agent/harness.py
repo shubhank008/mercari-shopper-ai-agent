@@ -153,6 +153,18 @@ class AgentHarness:
             # -------------------------------------------------------------
             if not tool_calls:
                 logger.info(f"{provider} returned text without requesting tool calls. State loop completed, RETURNING RESULTS.")
+                if not text_content.strip() and self.session_items_map:
+                    try:
+                        text_content, active_provider = await self.llm_manager.generate_final_response(
+                            messages=messages,
+                            system_prompt=SYSTEM_PROMPT,
+                        )
+                        logger.warning("LLM returned an empty tool-loop response; requested a final synthesis.")
+                    except Exception as exc:
+                        logger.warning("Final synthesis retry failed: %s", exc)
+                    if not text_content.strip():
+                        text_content = "I found listings matching your request. Review the comparison below and verify each listing's condition and seller details before buying."
+                        logger.warning("LLM returned an empty final response; using a safe summary fallback.")
                 # Append agent final response to conversation memory
                 if config.enable_session_memory:
                     self.conversation_history.append({"role": "assistant", "content": text_content})

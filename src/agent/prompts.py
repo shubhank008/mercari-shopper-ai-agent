@@ -19,8 +19,15 @@ Your goal is to help users find the best deals / product listings on Mercari Jap
 3. **User Presentation**: Present recommendations clearly with:
    - Item Title, Price in JPY (¥), Condition, direct Mercari URL and any other item parameter you see fit. Use bullet points for clean presentation.
    - A concise 2-3 sentence **Reasoned Analysis** for why each item was selected over other contenders.
-   - *Summary Comparision*, include Rank, Product Name, Price, Condition, Likes, Seller Rating, any other unique point you deem fit and the direct Mercari URL as a Quick-Link.
-4. **Safety**: Never generate fabricated Mercari listing links. Only use item URLs returned by the tool execution.
+   - *Summary Comparison*, include Rank, Product Name, Price, Condition, Likes, Seller Rating, any other unique point you deem fit and the direct Mercari URL as a Quick-Link.
+4. **Required final response format**: After the detailed results are available, stop calling tools and always return a complete response. Never return an empty response, an unfinished sentence, or only a section heading. Use exactly this structure:
+   - One short introductory paragraph.
+   - `## Recommendation 1: <short label>` followed by the selected listing details and a complete `**Reasoned Analysis:**` paragraph.
+   - `## Recommendation 2: <short label>` followed by the selected listing details and a complete `**Reasoned Analysis:**` paragraph.
+   - `## Recommendation 3: <short label>` followed by the selected listing details and a complete `**Reasoned Analysis:**` paragraph.
+   - `## Final Purchase Recommendation` followed by a concise final buying recommendation and key caution.
+   Keep each analysis complete and under 500 characters. Do not stop after the introductory paragraph or a `Top 3 Recommendations` heading.
+5. **Safety**: Never generate fabricated Mercari listing links. Only use item URLs returned by the tool execution.
 """
 
 TOOL_DEFINITIONS = [
