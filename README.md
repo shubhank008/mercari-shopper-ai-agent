@@ -23,14 +23,14 @@ Interprets natural language shopping requests, extracts search keyword and const
 ## Preview
 
 ### Web Chat
-<img width="500" alt="chrome_0ZXHQxWRTg" src="https://github.com/user-attachments/assets/ef9ac1fb-6d22-4277-ba5c-22cc8ca6f1cb" />  
-<img width="500" alt="chrome_lIgH1LzoV4" src="https://github.com/user-attachments/assets/2fbf9cb3-8ae1-45aa-a7e0-c91db482a47b" />  
-<img width="500" alt="chrome_tbvpVKkEw9" src="https://github.com/user-attachments/assets/7e6add6e-1e91-4c03-b698-1492adbe9dd1" />  
+<img width="400" alt="chrome_0ZXHQxWRTg" src="https://github.com/user-attachments/assets/ef9ac1fb-6d22-4277-ba5c-22cc8ca6f1cb" />  
+<img width="400" alt="chrome_lIgH1LzoV4" src="https://github.com/user-attachments/assets/2fbf9cb3-8ae1-45aa-a7e0-c91db482a47b" />  
+<img width="400" alt="chrome_tbvpVKkEw9" src="https://github.com/user-attachments/assets/7e6add6e-1e91-4c03-b698-1492adbe9dd1" />  
 
 
 ### CLI
-<img width="500" alt="chrome_h0gfHxKnfT" src="https://github.com/user-attachments/assets/0218eb6c-a19f-4d82-8ab9-03e375685c2c" />  
-<img width="500" alt="chrome_wcUUVUoP1u" src="https://github.com/user-attachments/assets/bfc4ec15-7be8-43e4-9aae-8c8717a1cb6e" />  
+<img width="400" alt="chrome_h0gfHxKnfT" src="https://github.com/user-attachments/assets/0218eb6c-a19f-4d82-8ab9-03e375685c2c" />  
+<img width="400" alt="chrome_wcUUVUoP1u" src="https://github.com/user-attachments/assets/bfc4ec15-7be8-43e4-9aae-8c8717a1cb6e" />  
 
 
 
